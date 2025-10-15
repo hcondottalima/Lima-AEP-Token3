@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lima AEP Tool</title>
+    <script src="tailwind.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset Básico */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        /* Layout Principal */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Cabeçalho */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #222;
+            color: white;
+            padding: 10px 20px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .header-title img {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+        }
+
+        .header-org {
+            font-size: 14px;
+        }
+
+        /* Wrapper do Conteúdo Principal */
+        .main-wrapper {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        /* Menu Lateral (Sidebar) */
+        nav {
+            width: 240px;
+            background-color: #fafafa;
+            border-right: 1px solid #ddd;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        nav h4 {
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #888;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        nav h4:first-child {
+            margin-top: 0;
+        }
+
+        nav a {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        nav a:hover {
+            background-color: #eee;
+        }
+
+        nav a.active {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .nav-bottom {
+            margin-top: auto;
+        }
+
+        /* Área de Conteúdo Principal */
+        main {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .view {
+            display: none;
+            /* Todas as "telas" começam escondidas */
+        }
+
+        .view.active {
+            display: block;
+            /* A "tela" ativa é mostrada */
+        }
+
+        main#content.audience-view-active {
+            padding: 0;
+        }
+
+        .view[data-view-id="audience-explorer"] {
+            height: 100%;
+        }
+
+        /* Estilo dos Campos de Informação (como na imagem) */
+        .info-item {
+            margin-bottom: 20px;
+        }
+
+        .info-item label {
+            display: block;
+            margin-bottom: 4px;
+            color: #555;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .info-display {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            background-color: #fff;
+            font-size: 14px;
+            font-family: monospace;
+        }
+
+        .sandbox-list-container {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #fff;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .sandbox-item {
+            display: flex;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 13px;
+        }
+
+        .sandbox-item-icon {
+            margin-right: 8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .sandbox-item-icon.production {
+            background-color: #007bff;
+        }
+
+        .sandbox-item-icon.development {
+            background-color: #808080;
+        }
+
+        .sandbox-item.active {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        #sandbox-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        #sandbox-arrow {
+            margin-right: 5px;
+            transition: transform 0.2s;
+        }
+
+        #sandbox-arrow.expanded {
+            transform: rotate(90deg);
+        }
+
+        /* --- NOVOS ESTILOS PARA A TELA DE EVENTOS --- */
+        .config-container,
+        .event-container {
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+
+        .config-header h2 {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .config-body {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .config-body.open {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-family: monospace;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .col-span-2 {
+            grid-column: span 2 / span 2;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #555;
+        }
+
+        td code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .chevron-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+
+        .chevron-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .event-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            /* Impede que o ícone seja espremido */
+            margin-right: 12px;
+        }
+
+        .config-container,
+        .event-container,
+        .batch-container {
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            cursor: pointer;
+            background-color: #f8f9fa;
+        }
+
+        .config-header h2 {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .config-body {
+            padding: 1.5rem;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #555;
+        }
+
+        td code {
+            background-color: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .chevron-icon {
+            transition: transform 0.2s;
+        }
+
+        .chevron-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        details>summary {
+            list-style: none;
+        }
+
+        details>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+            vertical-align: middle;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+        }
+        tr:hover .copy-btn {
+            opacity: 1;
+        }
+        td {
+            vertical-align: top;
+        }
+
+        /* --- NOVOS ESTILOS PARA OS CONTROLES DE BUSCA --- */
+        .search-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .search-controls select,
+        .search-controls input {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+
+        /* Custom scrollbar for better aesthetics in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a202c;
+            /* bg-gray-800 */
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            /* bg-gray-600 */
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+            /* bg-gray-500 */
+        }
+
+        /* Styles for the JSON tree view */
+        .tree ul {
+            padding-left: 1.5rem;
+            border-left: 1px solid #4a5568;
+            /* bg-gray-600 */
+        }
+
+        .tree li {
+            position: relative;
+            list-style: none;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+
+        .tree .tree-node {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .tree .tree-node:hover {
+            background-color: #2d3748;
+            /* bg-gray-700 */
+        }
+
+        .tree .tree-node.selected {
+            background-color: #4299e1;
+            /* bg-blue-500 */
+            color: white;
+        }
+
+        .key {
+            color: #90cdf4;
+            /* text-blue-300 */
+            font-weight: bold;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-title">
+                <img id="header-icon" src="icon.png" alt="icon" />
+                <span id="header-title-text">Lima AEP Tool</span>
+            </div>
+            <div class="header-org" id="header-org-name"></div>
+            <button id="refresh-auth-button" style="margin-left: 15px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Trocar Org</button>
+        </header>
+
+        <div class="main-wrapper">
+            <nav id="sidebar">
+                <div>
+                    <a href="#" class="nav-link active" data-view="summary">Summary</a>
+
+                    <h4>SOLUTIONS</h4>
+                    <a href="#" class="nav-link" data-view="events-list">Lista de Eventos AEP</a>
+                    <a href="#" class="nav-link" data-view="batch-download">Download de Batches com Falha</a>
+                    <a href="#" class="nav-link" data-view="jornadas">Jornadas Adobe</a>
+                    <a href="#" class="nav-link" data-view="audience-explorer">Audience Explorer</a>
+                </div>
+                <div class="nav-bottom">
+                    <h4>TOOLS</h4>
+                    <a href="#" class="nav-link" data-view="settings">Settings</a>
+                </div>
+            </nav>
+
+            <main id="content">
+                <div class="view active" id="summary-view" data-view-id="summary">
+                    <pre id="raw-data-container" style="background-color: #eee; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Aguardando dados...</pre>
+                    <div class="info-item">
+                        <label for="org-name-display">Org Name:</label>
+                        <div class="info-display" id="org-name-display"></div>
+                    </div>
+                    <div class="info-item">
+                        <label for="tenant-id-display">Tenant ID:</label>
+                        <div class="info-display" id="tenant-id-display"></div>
+                    </div>
+                    <div class="info-item">
+                        <label for="ims-org-display">IMS Org ID:</label>
+                        <div class="info-display" id="ims-org-display"></div>
+                    </div>
+                    <div class="info-item">
+                        <label for="client-id-display">Client ID:</label>
+                        <div class="info-display" id="client-id-display"></div>
+                    </div>
+                    <div class="info-item">
+                        <label for="sandbox-switcher">Sandbox Ativa:</label>
+                        <select id="sandbox-switcher" class="info-display"></select>
+                    </div>
+                    <button id="toggle-button">Mostrar Token</button>
+                    <div id="token-container" style="display: none;">
+                        <div class="info-item">
+                            <label for="token-display">Access Token:</label>
+                            <div class="info-display" id="token-display"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="view" data-view-id="events-list">
+                    <div class="config-container">
+                        <div class="config-header" id="config-toggle">
+                            <h2>Configuração da Requisição AEP</h2>
+                            <svg class="chevron-icon expanded" style="width:20px; height:20px;" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div id="config-body" class="config-body">
+
+                            <h4>Query Parameters</h4>
+                            <div class="form-group grid grid-cols-2">
+                                <div>
+                                    <label for="startTime">startTime</label>
+                                    <input type="datetime-local" id="startTime" data-key="startTime"
+                                        class="form-control">
+                                </div>
+                                <div>
+                                    <label for="endTime">endTime</label>
+                                    <input type="datetime-local" id="endTime" data-key="endTime" class="form-control">
+                                </div>
+                                <div>
+                                    <label for="limit">limit (MAX 1000)</label>
+                                    <input type="number" id="limit" data-key="limit" value="10">
+                                </div>
+                                <div>
+                                    <label for="mergePolicyId-select">Merge Policy</label>
+                                    <select id="mergePolicyId-select" data-key="mergePolicyId"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                        <option value="">Carregando policies...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="orderby">orderby</label>
+                                    <input type="text" id="orderby" data-key="orderby" value="-timestamp">
+                                </div>
+                                <div>
+                                    <label for="entityIdNS-select">entityIdNS</label>
+                                    <select id="entityIdNS-select" data-key="entityIdNS"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                                        <option value="">Carregando namespaces...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="entityId">entityId</label>
+                                    <input type="text" id="entityId" data-key="entityId">
+                                </div>
+
+                                <div>
+                                    <button id="send-request-btn" class="btn-primary">Buscar Eventos</button>
+                                </div>
+                            </div>
+
+                            <div class="search-controls">
+                                <div style="flex-basis: 40%;">
+                                    <label for="search-field-select" class="form-group label">Buscar em</label>
+                                    <select id="search-field-select">
+                                        <option value="eventType" selected>Event Type</option>
+                                        <option value="attribute">Qualquer Atributo</option>
+                                    </select>
+                                </div>
+                                <div style="flex-basis: 60%;">
+                                    <label for="search-input" class="form-group label">Termo da busca</label>
+                                    <input type="text" id="search-input"
+                                        placeholder="Digite para filtrar os eventos...">
+                                </div>
+                            </div>
+                            <!-- TÍTULO ATUALIZADO COM O CONTADOR -->
+                            <div style="display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1rem;">
+                                <h2 style="font-size: 1.5rem; font-weight: bold;">Eventos Recebidos</h2>
+                                <span id="event-counter" style="font-size: 0.9rem; color: #555;"></span>
+                            </div>
+                            <div id="events-wrapper">
+                                <p>Preencha a configuração e busque os eventos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="view" data-view-id="batch-download">
+                    <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem;">Download de Batches
+                        com
+                        Falha</h2>
+                    <div class="batch-container p-6">
+                        <div class="form-group">
+                            <label for="batchId-input">ID do Batch com Falha</label>
+                            <input type="text" id="batchId-input" placeholder="Cole o Batch ID aqui...">
+                        </div>
+                        <div>
+                            <button id="download-batch-btn" class="btn-primary">Buscar e Processar
+                                Batch</button>
+                        </div>
+                    </div>
+                    <div id="batch-results-container" class="mt-6">
+                        <h3 class="text-xl font-bold mb-4">Resultados</h3>
+                        <div id="batch-status" class="text-gray-600">Aguardando requisição...</div>
+                        <div id="batch-error-details" class="space-y-4 mt-4"></div>
+                    </div>
+                </div>
+
+                <div class="view" data-view-id="settings">
+                    <h2>Settings</h2>
+                    <p>Conteúdo desta tela será implementado aqui.</p>
+                </div>
+                <div class="view" data-view-id="jornadas">
+                    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <h1 class="text-3xl font-bold text-gray-800">Jornadas da Adobe</h1>
+                            <p class="text-gray-600 mt-2">Insira seu token de autorização e filtre por nome para
+                                visualizar as jornadas.</p>
+
+                            <div class="mt-4 space-y-2">
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" id="jornadas-filterInput"
+                                        placeholder="Filtrar por nome nos resultados..."
+                                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+                                    <select id="jornadas-statusFilter" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+                                        <option value="">Todos os Status</option>
+                                        <option value="live">Live</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="stopped">Stopped</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="finishing">Finishing</option>
+                                        <option value="updated">Updated</option>
+                                        <option value="created">Created</option>
+                                        <option value="deployed">Deployed</option>
+                                    </select>
+                                </div>
+                                <button id="jornadas-fetchButton"
+                                    class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                    Buscar Jornadas
+                                </button>
+                                <button id="jornadas-audienceReportButton"
+                                    class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors mt-2" style="display: none;">
+                                    Gerar Relatório de Audiências
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="jornadas-container" class="space-y-6">
+                            <div id="jornadas-initial-message" class="text-center p-8 bg-white rounded-xl shadow-md">
+                                <p class="text-gray-500">Aguardando a busca para exibir as jornadas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="view bg-gray-900 text-gray-300 font-sans" data-view-id="audience-explorer" style="height: 100%;">
+                    <div id="audience-app" class="flex h-full overflow-hidden">
+                        <!-- Left Panel -->
+                        <aside class="w-1/3 h-full flex flex-col p-4 bg-gray-800 border-r border-gray-700">
+                            <header class="mb-4">
+                                <div class="flex justify-between items-center">
+                                    <h1 class="text-2xl font-bold text-white">Audience Explorer</h1>
+                                    <button id="audience-exportButton"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-md transition duration-300 flex items-center justify-center text-xs">
+                                        <i class="fas fa-file-csv mr-2"></i>Export CSV
+                                    </button>
+                                </div>
+                                <p class="text-sm text-gray-400">Browse, and filter your audience segments.</p>
+                            </header>
+                
+                            <div class="flex items-stretch mb-4 space-x-2">
+                                <!-- Search Input -->
+                                <div class="relative flex-grow">
+                                    <input type="text" id="audience-filterInput" placeholder="Filter..."
+                                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <!-- Field Select -->
+                                <div class="relative">
+                                    <select id="audience-filterFieldSelect"
+                                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                                        <option value="all" selected>All Fields</option>
+                                        <option value="name">Name</option>
+                                        <option value="id">ID</option>
+                                        <option value="description">Description</option>
+                                        <option value="attributes">Attributes</option>
+                                        <option value="events">Events</option>
+                                        <option value="segmentType">Segment Type</option>
+                                        <option value="lifecycleState">Lifecycle State</option>
+                                        <option value="totalProfiles">Total Profiles</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                
+                            <div id="audience-stats" class="text-sm text-gray-400 mb-2">Loading data...</div>
+                
+                            <div id="audience-tree-container" class="flex-grow overflow-auto pr-2">
+                                <div id="audience-loader" class="flex items-center justify-center h-full">
+                                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                </div>
+                            </div>
+                        </aside>
+                
+                        <!-- Right Panel -->
+                        <div class="w-2/3 h-full p-4 flex flex-col">
+                            <div class="flex-shrink-0 flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white">Object Details</h2>
+                                <button id="audience-summarizeButton"
+                                    class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center text-sm">
+                                    <span class="mr-2">✨</span>Summarize with AI
+                                </button>
+                            </div>
+                            <div id="audience-details-container" class="bg-gray-800 rounded-lg p-4 flex-grow overflow-auto mb-4">
+                                <div class="flex items-center justify-center h-full text-gray-500">
+                                    <p>Select an object from the list to see its details.</p>
+                                </div>
+                            </div>
+                            <div id="audience-summary-container" class="hidden flex-shrink-0">
+                                <h3 class="text-lg font-bold text-white mb-2">AI Summary</h3>
+                                <div id="audience-summary-content" class="bg-gray-800 rounded-lg p-4 text-gray-300 max-h-48 overflow-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="window.js"></script>
+</body>
+
+</html>

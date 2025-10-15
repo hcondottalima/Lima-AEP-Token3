@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audience Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar for better aesthetics in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a202c;
+            /* bg-gray-800 */
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            /* bg-gray-600 */
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+            /* bg-gray-500 */
+        }
+
+        /* Styles for the JSON tree view */
+        .tree ul {
+            padding-left: 1.5rem;
+            border-left: 1px solid #4a5568;
+            /* bg-gray-600 */
+        }
+
+        .tree li {
+            position: relative;
+            list-style: none;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+
+        .tree .tree-node {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .tree .tree-node:hover {
+            background-color: #2d3748;
+            /* bg-gray-700 */
+        }
+
+        .tree .tree-node.selected {
+            background-color: #4299e1;
+            /* bg-blue-500 */
+            color: white;
+        }
+
+        .key {
+            color: #90cdf4;
+            /* text-blue-300 */
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-300 font-sans">
+
+    <div id="app" class="flex h-screen overflow-hidden">
+        <!-- Left Panel -->
+        <aside class="w-1/3 h-full flex flex-col p-4 bg-gray-800 border-r border-gray-700">
+            <header class="mb-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-white">Audience Explorer</h1>
+                    <button id="exportButton"
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-md transition duration-300 flex items-center justify-center text-xs">
+                        <i class="fas fa-file-csv mr-2"></i>Export CSV
+                    </button>
+                </div>
+                <p class="text-sm text-gray-400">Browse, and filter your audience segments.</p>
+            </header>
+
+            <div class="flex items-stretch mb-4 space-x-2">
+                <!-- Search Input -->
+                <div class="relative flex-grow">
+                    <input type="text" id="filterInput" placeholder="Filter..."
+                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <!-- Field Select -->
+                <div class="relative">
+                    <select id="filterFieldSelect"
+                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                        <option value="all" selected>All Fields</option>
+                        <option value="name">Name</option>
+                        <option value="id">ID</option>
+                        <option value="description">Description</option>
+                        <option value="attributes">Attributes</option>
+                        <option value="events">Events</option>
+                        <option value="segmentType">Segment Type</option>
+                        <option value="lifecycleState">Lifecycle State</option>
+                        <option value="totalProfiles">Total Profiles</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stats" class="text-sm text-gray-400 mb-2">Loading data...</div>
+
+            <div id="tree-container" class="flex-grow overflow-auto pr-2">
+                <div id="loader" class="flex items-center justify-center h-full">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Panel -->
+        <main class="w-2/3 h-full p-4 flex flex-col">
+            <div class="flex-shrink-0 flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">Object Details</h2>
+                <button id="summarizeButton"
+                    class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center text-sm">
+                    <span class="mr-2">✨</span>Summarize with AI
+                </button>
+            </div>
+            <div id="details-container" class="bg-gray-800 rounded-lg p-4 flex-grow overflow-auto mb-4">
+                <div class="flex items-center justify-center h-full text-gray-500">
+                    <p>Select an object from the list to see its details.</p>
+                </div>
+            </div>
+            <div id="summary-container" class="hidden flex-shrink-0">
+                <h3 class="text-lg font-bold text-white mb-2">AI Summary</h3>
+                <div id="summary-content" class="bg-gray-800 rounded-lg p-4 text-gray-300 max-h-48 overflow-auto"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = {
+                fullData: [],
+                filteredData: [],
+                selectedNode: null,
+            };
+
+            const filterInput = document.getElementById('filterInput');
+            const filterFieldSelect = document.getElementById('filterFieldSelect');
+            const treeContainer = document.getElementById('tree-container');
+            const detailsContainer = document.getElementById('details-container');
+            const statsElement = document.getElementById('stats');
+            const loader = document.getElementById('loader');
+            const summarizeButton = document.getElementById('summarizeButton');
+            const summaryContainer = document.getElementById('summary-container');
+            const summaryContent = document.getElementById('summary-content');
+            const exportButton = document.getElementById('exportButton');
+            let currentSegmentForSummary = null;
+
+            const callGeminiApi = async (prompt) => {
+                const apiKey = ""; // API key is handled by the environment.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                };
+
+                let response;
+                let retries = 5;
+                let delay = 1000;
+
+                while (retries > 0) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            const candidate = result.candidates?.[0];
+                            if (candidate && candidate.content?.parts?.[0]?.text) {
+                                return candidate.content.parts[0].text;
+                            } else {
+                                throw new Error('Invalid response structure from Gemini API.');
+                            }
+                        } else if (response.status === 429) { // Throttling
+                            console.warn(`Gemini API request throttled. Retrying in ${delay / 1000}s...`);
+                            await new Promise(res => setTimeout(res, delay));
+                            delay *= 2; // Exponential backoff
+                            retries--;
+                        } else {
+                            throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
+                        }
+                    } catch (error) {
+                        console.error('Error calling Gemini API:', error);
+                        retries--;
+                        if (retries === 0) {
+                            return "Sorry, I couldn't generate a summary at this moment.";
+                        }
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                    }
+                }
+                return "Sorry, the summary generation failed after multiple retries.";
+            };
+
+            const handleSummarizeClick = async () => {
+                if (!currentSegmentForSummary) {
+                    // This case should ideally not happen if button is hidden
+                    console.error("No segment selected for summary.");
+                    return;
+                }
+
+                summaryContainer.style.display = 'block';
+                summaryContent.innerHTML = '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin fa-lg mr-2"></i>Generating summary...</div>';
+
+                const systemInstruction = "You are an expert marketing data analyst. Your task is to provide a clear, concise, and business-focused summary of a user audience segment based on its JSON definition. Explain who is in this audience in simple terms. Ignore technical details like IDs, hashes, and timestamps unless they are critical for understanding the segment. Focus on the 'name', 'description', and 'expression' fields to deduce the audience's purpose.";
+                const userQuery = `Please summarize the following audience segment JSON:\n\n\`\`\`json\n${JSON.stringify(currentSegmentForSummary, null, 2)}\n\`\`\``;
+                const fullPrompt = `${systemInstruction}\n\n${userQuery}`;
+
+                const summaryText = await callGeminiApi(fullPrompt);
+
+                // Simple markdown-to-HTML for a nicer display
+                let formattedHtml = summaryText
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+                    .replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>') // List items
+                    .replace(/\n/g, '<br>');
+
+                summaryContent.innerHTML = formattedHtml;
+            };
+
+            /**
+             * Transforms the raw audience data into a structured format.
+             * @param {object} data The raw JSON data from audiences_page0.json.
+             * @returns {Array<object>} The transformed array of segment objects.
+             */
+            function transformAudienceData(data) {
+                if (!data || !Array.isArray(data.segments)) {
+                    console.error("Invalid data format: 'segments' array not found.");
+                    return [];
+                }
+
+                return data.segments.map(segment => {
+                    // --- Basic Information ---
+                    const result = {
+                        name: segment.name,
+                        id: segment.id,
+                        description: segment.description,
+                        lifecycleState: segment.lifecycleState,
+                        dependents: segment.dependents,
+                        dependencies: segment.dependencies,
+                        totalProfiles: segment.metrics?.data?.totalProfiles ?? null,
+                        creationDate: new Date(segment.creationTime).toLocaleString()
+                    };
+
+                    // --- Determine Segment Type ---
+                    const evalInfo = segment.evaluationInfo;
+                    if (evalInfo?.batch?.enabled) {
+                        result.segmentType = "Batch";
+                    } else if (evalInfo?.continuous?.enabled) {
+                        result.segmentType = "Streaming";
+                    } else if (evalInfo?.synchronous?.enabled) {
+                        result.segmentType = "Edge";
+                    } else {
+                        result.segmentType = null;
+                    }
+
+                    // --- Conditionally Add Attributes ---
+                    const attributes = segment.ansibleDataModel?.dataModel?.expression?.profileAttributesContainer?.items
+                        ?.map(item => item?.component?.id?.replace(/^profile\./, ''))
+                        .filter(id => id != null && id !== 'segmentMembership.segmentID._id') || [];
+
+
+                    if (attributes.length > 0) {
+                        result.attributes = attributes;
+                    }
+
+                    // --- Conditionally Add Events ---
+                    // This uses flatMap to handle the nested array structure
+                    const events = segment.ansibleDataModel?.dataModel?.expression?.xEventAttributesContainer?.items
+                        ?.flatMap(outerItem => outerItem?.items || [])
+                        ?.map(componentItem => componentItem?.eventType?.id?.replace(/^xEvent\./, ''))
+                        .filter(id => id != null) || [];
+
+                    if (events.length > 0) {
+                        result.events = events;
+                    }
+
+                    return result;
+                });
+            }
+
+            const loadAllData = async () => {
+                let allSegments = [];
+                const baseUrl = 'https://platform.adobe.io/data/core/ups';
+                let fullUrl = '@/segment/definitions'
+                const myHeaders = new Headers();
+                myHeaders.append('Authorization', 'Bearer eyJhbGciOiJSUzI1NiIsIng1dSI6Imltc19uYTEta2V5LWF0LTEuY2VyIiwia2lkIjoiaW1zX25hMS1rZXktYXQtMSIsIml0dCI6ImF0In0.eyJpZCI6IjE3NjA1MzE2MDQ2ODNfMTg1NDA5MWMtODY0ZC00NGI3LWJmZjYtOTUyYWU1ZjQ4YThlX3V3MiIsInR5cGUiOiJhY2Nlc3NfdG9rZW4iLCJjbGllbnRfaWQiOiJleGNfYXBwIiwidXNlcl9pZCI6IkMzOUYyMTY1NjgxQTVCRjQwQTQ5NUU5NEA4ODczMWViMzY3NTZlOTlkNDk1ZTYxLmUiLCJzdGF0ZSI6IntcInNlc3Npb25cIjpcImh0dHBzOi8vaW1zLW5hMS5hZG9iZWxvZ2luLmNvbS9pbXMvc2Vzc2lvbi92MS9ZbU5rWVRJMVpEY3RaakkyWXkwME5UY3pMV0pqTVRJdE1UWmtPRGszWTJOa1lqYzJMUzFETXpsR01qRTJOVFk0TVVFMVFrWTBNRUUwT1RWRk9UUkFPRGczTXpGbFlqTTJOelUyWlRrNVpEUTVOV1UyTVM1bFwifSIsImFzIjoiaW1zLW5hMSIsImFhX2lkIjoiQkRFMTIxOTY2ODFBNUJGNDBBNDk1RUZBQDhmMjkxMWU0NjEyOTMxNDgwYTQ5NWZmYiIsImN0cCI6MCwiZmciOiJaMzROQ1ZaVkZMTTVRRFVLRkFRVklIQUFHTT09PT09PSIsInNpZCI6IjE3NTg2Mzk2MzExMjJfNTI3YzExMDUtYjU1NS00YzYxLWFiOTYtZDYzODJjNzRlM2FkX3V3MiIsIm1vaSI6IjI4MjQ0YmNlIiwicGJhIjoiTWVkU2VjTm9FVixMb3dTZWMiLCJleHBpcmVzX2luIjoiODY0MDAwMDAiLCJzY29wZSI6ImFiLm1hbmFnZSxhY2NvdW50X2NsdXN0ZXIucmVhZCxhZGRpdGlvbmFsX2luZm8sYWRkaXRpb25hbF9pbmZvLmpvYl9mdW5jdGlvbixhZGRpdGlvbmFsX2luZm8ucHJvamVjdGVkUHJvZHVjdENvbnRleHQsYWRkaXRpb25hbF9pbmZvLnJvbGVzLEFkb2JlSUQsYWRvYmVpby5hcHByZWdpc3RyeS5yZWFkLGFkb2JlaW9fYXBpLGFlbS5mcm9udGVuZC5hbGwsYXVkaWVuY2VtYW5hZ2VyX2FwaSxjcmVhdGl2ZV9jbG91ZCxtcHMsb3BlbmlkLG9yZy5yZWFkLHBwcy5yZWFkLHJlYWRfb3JnYW5pemF0aW9ucyxyZWFkX3BjLHJlYWRfcGMuYWNwLHJlYWRfcGMuZG1hX3RhcnRhbixzZXJ2aWNlX3ByaW5jaXBhbHMud3JpdGUsc2Vzc2lvbiIsImNyZWF0ZWRfYXQiOiIxNzYwNTMxNjA0NjgzIn0.KDQFrWqM4Pym_lZv_w8kalloAhq5y3COzE3gccAaVMdd8iSwOcX8gW4aQjZSzDpklsKoTK-ILrLGEL-e3j3gHLEUlGU4xJGiu9-4IT7hHSe0mNq4ypTuVaH-nDuTEtJBVpHm98MA5fCl64EsPo21ReIV4zXd7j2DDAgYxCjZksaTmhQuQl4enIViy6GnxolR8QboWpSxBq9nXjks3Rsca6uNoFDtZCbr7ydWHSLOb9YQoR2VvWq_u176YjHaZuajSjmYu_PN41zLdavr3PmUbi-I85KHG0mGiZTphxTK7Hyik9andIKnUgtbOOe1-4abh_6oPPp99NDBFtYxsiOIdg');
+                myHeaders.append('Content-Type', 'application/json');
+                myHeaders.append('Accept', 'application/json');
+                myHeaders.append('x-api-key', '67f9717252be4f948dcd6fce63b8f74f');
+                myHeaders.append('x-gw-ims-org-id', '88971E916756E8850A495FDE@AdobeOrg');
+                myHeaders.append('x-sandbox-name', 'prod');
+                do {
+                    try {
+                        const url = new URL(fullUrl.replace('@', baseUrl));
+                        const response = await fetch(url.toString(), {
+                            method: 'GET',
+                            headers: myHeaders
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        if (data.segments && Array.isArray(data.segments)) {
+                            const tempData = transformAudienceData(data);
+                            allSegments = allSegments.concat(tempData);
+                        }
+                        fullUrl = data.link.next;
+                    } catch (error) {
+                        console.error(`Error loading or parsing data:`, error);
+                        statsElement.innerHTML = `<span class="text-red-400">Error loading data.</span>`;
+                    }
+                } while (fullUrl);
+                return allSegments;
+            };
+
+            const createTreeNode = (key) => {
+                const li = document.createElement('li');
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'tree-node';
+
+                // Placeholder for alignment, no toggler icon
+                const placeholder = document.createElement('span');
+                placeholder.className = 'w-5 inline-block';
+                nodeDiv.appendChild(placeholder);
+
+                const keySpan = document.createElement('span');
+                keySpan.className = 'key';
+                keySpan.textContent = key;
+                nodeDiv.appendChild(keySpan);
+
+                li.appendChild(nodeDiv);
+                return { li, nodeDiv };
+            };
+
+            const renderTree = (data, parent) => {
+                parent.innerHTML = '';
+                const ul = document.createElement('ul');
+                ul.className = 'tree';
+
+                data.forEach((item, index) => {
+                    const name = item.name || `Segment ${index}`;
+                    const { li, nodeDiv } = createTreeNode(name);
+                    nodeDiv.dataset.id = item.id;
+                    ul.appendChild(li);
+                });
+                parent.appendChild(ul);
+            };
+
+            const renderDetails = (data) => {
+                detailsContainer.innerHTML = '';
+                if (!data) {
+                    detailsContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Select an object from the list to see its details.</p></div>';
+                    summarizeButton.style.display = 'none';
+                    summaryContainer.style.display = 'none';
+                    currentSegmentForSummary = null;
+                    return;
+                }
+
+                // Helper function to convert a JS value to syntax-highlighted HTML
+                const valueToHtml = (value) => {
+                    if (value === null) return `<span class="text-gray-500">null</span>`;
+                    switch (typeof value) {
+                        case 'string':
+                            return `"<span class="text-green-400">${value}</span>"`;
+                        case 'number':
+                            return `<span class="text-yellow-400">${value}</span>`;
+                        case 'boolean':
+                            return `<span class="text-purple-400">${value}</span>`;
+                        case 'object':
+                            if (Array.isArray(value)) {
+                                if (value.length === 0) return '[]';
+                                let arrHtml = '[\n';
+                                arrHtml += value.map(item => `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"<span class="text-green-400">${item}</span>"`).join(',\n');
+                                arrHtml += `\n&nbsp;&nbsp;&nbsp;&nbsp;]`;
+                                return arrHtml;
+                            }
+                            // Fallback for other objects
+                            return JSON.stringify(value, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
+                        default:
+                            return String(value);
+                    }
+                };
+
+                let html = '<div class="text-sm font-mono whitespace-pre-wrap">{<br>';
+                const keys = Object.keys(data);
+
+                keys.forEach((key, index) => {
+                    const value = data[key];
+                    const isLast = index === keys.length - 1;
+
+                    html += `&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"${key}"</span>: `;
+
+                    if (key === 'id' && typeof value === 'string') {
+                        const url = `https://experience.adobe.com/#/@xpi/sname:prod/platform/segment/browse/${value}`;
+                        html += `<a href="${url}" target="_blank" class="text-blue-400 hover:underline">"<span class="text-green-400">${value}</span>"</a>`;
+                    } else if ((key === 'dependents' || key === 'dependencies') && Array.isArray(value) && value.length > 0) {
+                        let arrHtml = '[\n';
+                        arrHtml += value.map(id => {
+                            const depSegment = state.fullData.find(s => s.id === id);
+                            const depName = depSegment ? depSegment.name : id;
+                            return `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#" class="dependency-link text-blue-400 hover:underline" data-id="${id}" title="Click to view segment: ${id}">"<span class="text-green-400">${depName}</span>"</a>`;
+                        }).join(',\n');
+                        arrHtml += `\n&nbsp;&nbsp;&nbsp;&nbsp;]`;
+                        html += arrHtml;
+                    } else {
+                        html += valueToHtml(value);
+                    }
+
+                    html += `${isLast ? '' : ','}<br>`;
+                });
+                html += '}</div>';
+
+                detailsContainer.innerHTML = html;
+
+                detailsContainer.querySelectorAll('.dependency-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = e.currentTarget.dataset.id;
+
+                        const isTargetInFilteredList = state.filteredData.some(item => item.id === targetId);
+
+                        if (!isTargetInFilteredList) {
+                            filterInput.value = '';
+                            filterFieldSelect.value = 'all';
+                            handleFilter();
+                        }
+
+                        setTimeout(() => {
+                            const targetNode = treeContainer.querySelector(`.tree-node[data-id="${targetId}"]`);
+                            if (targetNode) {
+                                targetNode.click();
+                                targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else {
+                                console.warn(`Segment node with ID ${targetId} not found in the tree.`);
+                            }
+                        }, 50);
+                    });
+                });
+
+                summarizeButton.style.display = 'flex';
+                summaryContainer.style.display = 'none'; // Hide old summary
+                summaryContent.innerHTML = '';
+                currentSegmentForSummary = data;
+            };
+
+            const handleFilter = () => {
+                const query = filterInput.value.toLowerCase().trim();
+                const filterField = filterFieldSelect.value;
+
+                if (!query) {
+                    state.filteredData = state.fullData;
+                } else {
+                    state.filteredData = state.fullData.filter(item => {
+                        if (filterField === 'all') {
+                            const name = (item.name || '').toLowerCase();
+                            const id = (item.id || '').toLowerCase();
+                            const description = (item.description || '').toLowerCase();
+
+                            const attributesMatch = item.attributes && Array.isArray(item.attributes)
+                                ? item.attributes.some(attr => attr.toLowerCase().includes(query))
+                                : false;
+
+                            const eventsMatch = item.events && Array.isArray(item.events)
+                                ? item.events.some(event => event.toLowerCase().includes(query))
+                                : false;
+
+                            return name.includes(query) || id.includes(query) || description.includes(query) || attributesMatch || eventsMatch;
+                        } else if (filterField === 'attributes' || filterField === 'events') {
+                            const list = item[filterField];
+                            return list && Array.isArray(list) ? list.some(val => val.toLowerCase().includes(query)) : false;
+                        } else if (filterField === 'totalProfiles') {
+                            const value = Number(item[filterField] == null ? -1 : item[filterField]);
+                            return value == query;
+                        } else {
+                            const value = (item[filterField] || '').toString().toLowerCase();
+                            return value.includes(query);
+                        }
+                    });
+                }
+                statsElement.textContent = `Showing ${state.filteredData.length} of ${state.fullData.length} segments.`;
+                renderTree(state.filteredData, treeContainer);
+                renderDetails(null);
+                if (state.selectedNode) {
+                    state.selectedNode.classList.remove('selected');
+                    state.selectedNode = null;
+                }
+            };
+
+            const exportToCsv = () => {
+                if (state.filteredData.length === 0) {
+                    console.warn("No data to export.");
+                    return;
+                }
+
+                const headers = ['Name', 'ID', 'TotalProfiles', 'CreationDate'];
+                const csvRows = [headers.join(',')];
+
+                const escapeCsvCell = (cell) => {
+                    if (cell == null) {
+                        return '';
+                    }
+                    const cellStr = String(cell);
+                    if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                        return `"${cellStr.replace(/"/g, '""')}"`;
+                    }
+                    return cellStr;
+                };
+
+                state.filteredData.forEach(item => {
+                    const row = [
+                        escapeCsvCell(item.name),
+                        escapeCsvCell(item.id),
+                        escapeCsvCell(item.totalProfiles),
+                        escapeCsvCell(item.creationDate)
+                    ];
+                    csvRows.push(row.join(','));
+                });
+
+                const csvString = csvRows.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'filtered_audiences.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            treeContainer.addEventListener('click', (e) => {
+                const nodeDiv = e.target.closest('.tree-node');
+                if (!nodeDiv) return;
+
+                if (state.selectedNode) {
+                    state.selectedNode.classList.remove('selected');
+                }
+                nodeDiv.classList.add('selected');
+                state.selectedNode = nodeDiv;
+
+                const id = nodeDiv.dataset.id;
+                if (id !== undefined) {
+                    const selectedItem = state.filteredData.find(item => item.id === id);
+                    renderDetails(selectedItem);
+                }
+            });
+
+            const init = async () => {
+                state.fullData = await loadAllData();
+                state.filteredData = state.fullData;
+                loader.style.display = 'none';
+                statsElement.textContent = `Loaded ${state.fullData.length} total segments.`;
+                renderTree(state.filteredData, treeContainer);
+                filterInput.addEventListener('keyup', handleFilter);
+                filterFieldSelect.addEventListener('change', handleFilter);
+                summarizeButton.addEventListener('click', handleSummarizeClick);
+                exportButton.addEventListener('click', exportToCsv);
+            };
+            init();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            width: 450px;
+            font-family: Arial, sans-serif;
+            padding: 15px;
+        }
+
+        h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-item strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0;
+            font-size: 12px;
+            color: #000;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #token-container {
+            display: none;
+        }
+
+        /* --- ESTILOS REFINADOS PARA A LISTA DE SANDBOX --- */
+        #sandboxes-list-display {
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            display: none;
+        }
+
+        .sandbox-item {
+            display: flex;
+            align-items: center;
+            padding: 2px 0;
+        }
+
+        .sandbox-item-icon {
+            margin-right: 8px;
+            width: 20px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        /* Regra base para o círculo */
+        .sandbox-item-icon::before {
+            content: '';
+            /* Conteúdo vazio, o círculo é feito com background */
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+            /* Cor padrão caso o tipo não seja definido */
+        }
+
+        /* Círculo azul para Production */
+        .sandbox-item-icon.production::before {
+            background-color: #007bff;
+        }
+
+        /* Círculo cinza para Development */
+        .sandbox-item-icon.development::before {
+            background-color: #808080;
+        }
+
+        /* Estilo para o texto do item ativo */
+        .sandbox-item.active {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
+        #sandbox-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            user-select: none;
+            /* Impede que o texto seja selecionado ao clicar */
+        }
+
+        #sandbox-arrow {
+            margin-right: 5px;
+            transition: transform 0.2s;
+            /* Animação suave da seta */
+        }
+
+        #sandbox-arrow.expanded {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Informações da Sessão Adobe</h3>
+
+    <div class="info-item">
+        <strong>Org Name:</strong>
+        <pre id="org-name-display">Aguardando...</pre>
+    </div>
+
+    <div class="info-item">
+        <strong>Tenant ID:</strong>
+        <pre id="tenant-id-display">Aguardando...</pre>
+    </div>
+
+    <div class="info-item">
+        <strong>IMS Org ID:</strong>
+        <pre id="ims-org-display">Aguardando...</pre>
+    </div>
+
+    <div class="info-item">
+        <strong>Client ID:</strong>
+        <pre id="client-id-display">Aguardando...</pre>
+    </div>
+
+    <div class="info-item">
+        <strong>Sandbox Ativa:</strong>
+        <pre id="last-sandbox-display">Aguardando...</pre>
+    </div>
+
+    <div class="info-item">
+        <div id="sandbox-toggle">
+            <span id="sandbox-arrow">▶</span>
+            <strong>Sandboxes Disponíveis:</strong>
+        </div>
+        <div id="sandboxes-list-display">Aguardando...</div>
+    </div>
+
+    <button id="toggle-button">Mostrar Token</button>
+    <div id="token-container">
+        <div class="info-item">
+            <strong>Access Token:</strong>
+            <pre id="token-display"></pre>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

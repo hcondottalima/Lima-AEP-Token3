@@ -1,0 +1,52 @@
+{
+    "manifest_version": 3,
+    "name": "Lima AEP Tool2",
+    "version": "2.3",
+    "description": "Exibe informações da sessão Adobe em uma janela separada.",
+    "permissions": [
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "*://experience.adobe.com/*",
+        "*://experience-qa.adobe.com/*",
+        "*://experience-stage.adobe.com/*"
+    ],
+    "action": {
+        "default_icon": "../ui/icon.png"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://experience.adobe.com/*",
+                "*://experience-qa.adobe.com/*",
+                "*://experience-stage.adobe.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "injected.js",
+                "../ui/window.html",
+                "../ui/jornadas.html"
+            ],
+            "matches": [
+                "*://experience.adobe.com/*",
+                "*://experience-qa.adobe.com/*",
+                "*://experience-stage.adobe.com/*"
+            ]
+        }
+    ],
+    "icons": {
+        "16": "../ui/images/icon16.png",
+        "48": "../ui/images/icon48.png",
+        "128": "../ui/images/icon128.png"
+    }
+}

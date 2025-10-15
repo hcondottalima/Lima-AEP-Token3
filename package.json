@@ -1,0 +1,19 @@
+{
+  "name": "lima-aep-token3",
+  "version": "1.0.0",
+  "description": "Lima AEP Tool - Standalone and Extension",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "tailwindcss": "^4.1.14"
+  },
+  "devDependencies": {
+    "electron": "^38.2.2",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "windicss": "^3.5.6"
+  }
+}
