@@ -39,7 +39,8 @@ const ui = {
         summarizeButton: getElement('audience-summarizeButton'),
         summaryContainer: getElement('audience-summary-container'),
         summaryContent: getElement('audience-summary-content'),
-        exportButton: getElement('audience-exportButton')
+        exportButton: getElement('audience-exportButton'),
+        resizer: getElement('resizer')
     }
 };
 
@@ -55,9 +56,18 @@ const audienceExplorer_state = {
 
 // --- Audience Explorer Functions ---
 async function audienceExplorer_callGeminiApi(prompt) {
-    const apiKey = ""; // API key is handled by the environment.
+    const apiKey = "AIzaSyDLpA4IniZtfFH3iWPezGbodoR8-w7-hkU"; // API key is handled by the environment.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    const payload = {
+        contents: [{
+            parts: [{ text: prompt }]
+        }],
+        systemInstruction: {
+            parts: [{
+                text: "Responda todas as perguntas exclusivamente em português do Brasil."
+            }]
+        }
+    };
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -93,12 +103,13 @@ function audienceExplorer_getFilteredSegmentForSummary(segment) {
 async function audienceExplorer_handleSummarizeClick() {
     if (!audienceExplorer_state.currentSegmentForSummary) return;
     ui.audience.summaryContainer.style.display = 'block';
+    if (ui.audience.resizer) ui.audience.resizer.style.display = 'block';
     ui.audience.summaryContent.innerHTML = '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin fa-lg mr-2"></i>Generating summary...</div>';
     const systemInstruction = "You are an expert marketing data analyst. Your task is to provide a clear, concise, and business-focused summary of a user audience segment based on its JSON definition. Explain who is in this audience in simple terms. Ignore technical details like IDs, hashes, and timestamps unless they are critical for understanding the segment. Focus on the 'name', 'description', and 'expression' fields to deduce the audience's purpose.";
 
     const filteredSegment = audienceExplorer_getFilteredSegmentForSummary(audienceExplorer_state.currentSegmentForSummary);
 
-    const userQuery = "Please summarize the following audience segment json:\n\n```json\n" + JSON.stringify(filteredSegment, null, 2) + "\n```";
+    const userQuery = `Please summarize the following audience segment json:\n\n\`\`\`json\n${JSON.stringify(filteredSegment, null, 2)}\n\`\`\``;
     const summaryText = await audienceExplorer_callGeminiApi(`${systemInstruction}\n\n${userQuery}`);
     let formattedHtml = summaryText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>').replace(/\n/g, '<br>');
     ui.audience.summaryContent.innerHTML = formattedHtml;
@@ -192,6 +203,7 @@ function audienceExplorer_renderDetails(data) {
         detailsContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;"><p>Select an object from the list to see its details.</p></div>';
         ui.audience.summarizeButton.style.display = 'none';
         ui.audience.summaryContainer.style.display = 'none';
+        if (ui.audience.resizer) ui.audience.resizer.style.display = 'none';
         audienceExplorer_state.currentSegmentForSummary = null;
         return;
     }
@@ -261,6 +273,7 @@ function audienceExplorer_renderDetails(data) {
     });
     ui.audience.summarizeButton.style.display = 'flex';
     ui.audience.summaryContainer.style.display = 'none';
+    if (ui.audience.resizer) ui.audience.resizer.style.display = 'none';
     ui.audience.summaryContent.innerHTML = '';
     audienceExplorer_state.currentSegmentForSummary = data;
 }
@@ -458,6 +471,48 @@ async function initAudienceExplorer() {
             audienceExplorer_renderDetails(selectedItem);
         }
     });
+
+    // Resizer logic
+    const resizer = ui.audience.resizer;
+    const detailsContainer = ui.audience.detailsContainer;
+    const summaryContainer = ui.audience.summaryContainer;
+
+    let isResizing = false;
+
+    if (resizer) {
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            // Add a class to the body to prevent text selection during resize
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'row-resize';
+
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                // Restore body styles
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+            }, { once: true }); // Ensure mouseup runs only once
+        });
+    }
+
+    function handleMouseMove(e) {
+        if (!isResizing) return;
+
+        const rightPanel = resizer.parentElement;
+        const totalHeight = rightPanel.offsetHeight;
+        const resizerHeight = resizer.offsetHeight;
+        
+        // Calculate the height of the top panel relative to the right panel's top
+        const newTopHeight = e.clientY - rightPanel.getBoundingClientRect().top;
+
+        if (newTopHeight > 100 && (totalHeight - newTopHeight - resizerHeight) > 100) { // Minimum height for panels
+            detailsContainer.style.height = `${newTopHeight}px`;
+            detailsContainer.style.flexGrow = '0';
+            summaryContainer.style.flexBasis = 'auto'; // Allow summary container to be resized
+        }
+    }
 
     // Reload data when sandbox changes
     ui.sandboxSwitcherHeader.addEventListener('change', async () => {
