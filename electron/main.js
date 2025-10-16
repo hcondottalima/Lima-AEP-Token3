@@ -36,7 +36,7 @@ function createAuthWindow(interactive = false) {
   authWindow = new BrowserWindow(options);
   authWindow.isInteractiveInitialLoad = interactive;
 
-  authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' });
+    authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' });
 
   authWindow.webContents.openDevTools({ mode: 'detach' });
 
