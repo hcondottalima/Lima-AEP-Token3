@@ -36,7 +36,19 @@ function createAuthWindow(interactive = false) {
   authWindow = new BrowserWindow(options);
   authWindow.isInteractiveInitialLoad = interactive;
 
-    authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' });
+      const platform = process.platform;
+  let userAgent;
+
+  if (platform === 'win32') {
+    userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+  } else if (platform === 'linux') {
+    userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+  } else {
+    // Fallback for other platforms like macOS, or a generic one
+    userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+  }
+
+  authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: userAgent });
 
   authWindow.webContents.openDevTools({ mode: 'detach' });
 
