@@ -8,12 +8,12 @@ const ui = {
     orgNameDisplay: getElement('org-name-display'),
     tenantIdDisplay: getElement('tenant-id-display'),
     imsOrgDisplay: getElement('ims-org-display'),
-    clientIdDisplay: getElement('client-id-display'),
     tokenDisplay: getElement('token-display'),
     tokenContainer: getElement('token-container'),
     toggleButton: getElement('toggle-button'),
-    sandboxSwitcher: getElement('sandbox-switcher'),
+    sandboxSwitcherHeader: getElement('sandbox-switcher-header'),
     headerOrgName: getElement('header-org-name'),
+    debugToggle: getElement('debugToggle'),
     mergePolicySelect: getElement('mergePolicyId-select'),
     namespaceSelect: getElement('entityIdNS-select'),
     navLinks: document.querySelectorAll('.nav-link'),
@@ -49,7 +49,8 @@ const audienceExplorer_state = {
     filteredData: [],
     selectedNode: null,
     currentSegmentForSummary: null,
-    isInitialized: false
+    isInitialized: false,
+    debug: false
 };
 
 // --- Audience Explorer Functions ---
@@ -79,12 +80,25 @@ async function audienceExplorer_callGeminiApi(prompt) {
     }
 }
 
+function audienceExplorer_getFilteredSegmentForSummary(segment) {
+    if (audienceExplorer_state.debug) {
+        return segment;
+    }
+    const newSegment = { ...segment };
+    delete newSegment.dependents;
+    delete newSegment.dependencies;
+    return newSegment;
+}
+
 async function audienceExplorer_handleSummarizeClick() {
     if (!audienceExplorer_state.currentSegmentForSummary) return;
     ui.audience.summaryContainer.style.display = 'block';
     ui.audience.summaryContent.innerHTML = '<div class="flex items-center justify-center"><i class="fas fa-spinner fa-spin fa-lg mr-2"></i>Generating summary...</div>';
     const systemInstruction = "You are an expert marketing data analyst. Your task is to provide a clear, concise, and business-focused summary of a user audience segment based on its JSON definition. Explain who is in this audience in simple terms. Ignore technical details like IDs, hashes, and timestamps unless they are critical for understanding the segment. Focus on the 'name', 'description', and 'expression' fields to deduce the audience's purpose.";
-    const userQuery = `Please summarize the following audience segment JSON:\n\n\`\`\`json\n${JSON.stringify(audienceExplorer_state.currentSegmentForSummary, null, 2)}\n\`\`\``;
+
+    const filteredSegment = audienceExplorer_getFilteredSegmentForSummary(audienceExplorer_state.currentSegmentForSummary);
+
+    const userQuery = "Please summarize the following audience segment json:\n\n```json\n" + JSON.stringify(filteredSegment, null, 2) + "\n```";
     const summaryText = await audienceExplorer_callGeminiApi(`${systemInstruction}\n\n${userQuery}`);
     let formattedHtml = summaryText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>').replace(/\n/g, '<br>');
     ui.audience.summaryContent.innerHTML = formattedHtml;
@@ -119,7 +133,7 @@ function audienceExplorer_transformAudienceData(data) {
 async function audienceExplorer_loadAllData() {
     let allSegments = [];
     let nextUrl = '/data/core/ups/segment/definitions';
-    const selectedSandbox = ui.sandboxSwitcher.value;
+    const selectedSandbox = ui.sandboxSwitcherHeader.value;
     if (!selectedSandbox) {
         ui.audience.stats.innerHTML = `<span class="text-red-400">Error: No sandbox selected.</span>`;
         return [];
@@ -175,46 +189,50 @@ function audienceExplorer_renderDetails(data) {
     const detailsContainer = ui.audience.detailsContainer;
     detailsContainer.innerHTML = '';
     if (!data) {
-        detailsContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><p>Select an object from the list to see its details.</p></div>';
+        detailsContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;"><p>Select an object from the list to see its details.</p></div>';
         ui.audience.summarizeButton.style.display = 'none';
         ui.audience.summaryContainer.style.display = 'none';
         audienceExplorer_state.currentSegmentForSummary = null;
         return;
     }
     const valueToHtml = (value) => {
-        if (value === null) return `<span class="text-gray-500">null</span>`;
+        if (value === null) return `<span class="json-null">null</span>`;
         switch (typeof value) {
-            case 'string': return `"<span class="text-green-400">${value}</span>"`;
-            case 'number': return `<span class="text-yellow-400">${value}</span>`;
-            case 'boolean': return `<span class="text-purple-400">${value}</span>`;
+            case 'string':
+                return `"<span class="json-string">${value}</span>"`;
+            case 'number':
+                return `<span class="json-number">${value}</span>`;
+            case 'boolean':
+                return `<span class="json-boolean">${value}</span>`;
             case 'object':
                 if (Array.isArray(value)) {
                     if (value.length === 0) return '[]';
-                    let arrHtml = '[\n';
-                    arrHtml += value.map(item => `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"<span class="text-green-400">${item}</span>"`).join(',\n');
-                    arrHtml += `\n&nbsp;&nbsp;&nbsp;&nbsp;]`;
+                    let arrHtml = '[<br>';
+                    arrHtml += value.map(item => `&nbsp;&nbsp;&nbsp;&nbsp;<span class="json-string">"${item}"</span>`).join(',<br>');
+                    arrHtml += `<br>]`;
                     return arrHtml;
                 }
                 return JSON.stringify(value, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;');
-            default: return String(value);
+            default:
+                return String(value);
         }
     };
     let html = '<div class="text-sm font-mono whitespace-pre-wrap">{<br>';
     const keys = Object.keys(data);
     keys.forEach((key, index) => {
         const value = data[key];
-        html += `&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"${key}"</span>: `;
+        html += `&nbsp;&nbsp;<span class="json-key">"${key}"</span>: `;
         if (key === 'id' && typeof value === 'string') {
-            const url = `https://experience.adobe.com/#/@${ui.imsOrgDisplay.textContent.split('@')[1]}/sname:${ui.sandboxSwitcher.value}/platform/segment/browse/${value}`;
-            html += `<a href="#" onclick="window.api.openExternal('${url}')" class="text-blue-400 hover:underline">"<span class="text-green-400">${value}</span>"</a>`;
+            const url = `https://experience.adobe.com/#/@${ui.imsOrgDisplay.textContent.split('@')[1]}/sname:${ui.sandboxSwitcherHeader.value}/platform/segment/browse/${value}`;
+            html += `<a href="#" onclick="window.api.openExternal('${url}')" class="json-link">"<span class="json-string">${value}</span>"</a>`;
         } else if ((key === 'dependents' || key === 'dependencies') && Array.isArray(value) && value.length > 0) {
-            let arrHtml = '[\n';
+            let arrHtml = '[<br>';
             arrHtml += value.map(id => {
                 const depSegment = audienceExplorer_state.fullData.find(s => s.id === id);
                 const depName = depSegment ? depSegment.name : id;
-                return `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#" class="dependency-link text-blue-400 hover:underline" data-id="${id}" title="Click to view segment: ${id}">"<span class="text-green-400">${depName}</span>"</a>`;
-            }).join(',\n');
-            arrHtml += `\n&nbsp;&nbsp;&nbsp;&nbsp;]`;
+                return `&nbsp;&nbsp;&nbsp;&nbsp;<a href="#" class="dependency-link json-link" data-id="${id}" title="Click to view segment: ${id}">"<span class="json-string">${depName}</span>"</a>`;
+            }).join(',<br>');
+            arrHtml += `<br>&nbsp;&nbsp;]`;
             html += arrHtml;
         } else {
             html += valueToHtml(value);
@@ -297,7 +315,7 @@ function updateSummaryUI(data) {
     if (!data || data.error) {
         const errorMessage = (data && data.error) ? data.error : 'Nenhum dado encontrado.';
         const errorText = `Erro: ${errorMessage}`;
-        [ui.orgNameDisplay, ui.tenantIdDisplay, ui.imsOrgDisplay, ui.clientIdDisplay].forEach(el => el.textContent = errorText);
+        [ui.orgNameDisplay, ui.tenantIdDisplay, ui.imsOrgDisplay].forEach(el => el.textContent = errorText);
         ui.headerOrgName.textContent = 'Erro';
         ui.toggleButton.disabled = true;
         ui.rawDataContainer.textContent = JSON.stringify(data, null, 2);
@@ -308,11 +326,10 @@ function updateSummaryUI(data) {
     ui.orgNameDisplay.textContent = data.orgName || 'Não encontrado';
     ui.tenantIdDisplay.textContent = data.tenantId || 'Não encontrado';
     ui.imsOrgDisplay.textContent = data.imsOrg || 'Não encontrado';
-    ui.clientIdDisplay.textContent = data.clientId || 'Não encontrado';
     ui.rawDataContainer.textContent = JSON.stringify(data, null, 2);
 
     // Sandbox Switcher
-    ui.sandboxSwitcher.innerHTML = '';
+    ui.sandboxSwitcherHeader.innerHTML = '';
     if (data.availableSandboxes && data.availableSandboxes.length > 0) {
         data.availableSandboxes.forEach(sandbox => {
             const option = document.createElement('option');
@@ -321,15 +338,14 @@ function updateSummaryUI(data) {
             if (sandbox.name === data.lastSelectedSandbox) {
                 option.selected = true;
             }
-            ui.sandboxSwitcher.appendChild(option);
+            ui.sandboxSwitcherHeader.appendChild(option);
         });
-        // Trigger data fetch for the newly populated dropdown
-        handleSandboxChange(); 
+        handleSandboxChange();
     } else {
         const option = document.createElement('option');
         option.textContent = 'Nenhuma sandbox disponível';
         option.disabled = true;
-        ui.sandboxSwitcher.appendChild(option);
+        ui.sandboxSwitcherHeader.appendChild(option);
     }
 
     // Token Display
@@ -344,7 +360,7 @@ function updateSummaryUI(data) {
 async function fetchAndPopulateMergePolicies() {
     try {
         ui.mergePolicySelect.innerHTML = '<option value="">Carregando...</option>';
-        const selectedSandbox = ui.sandboxSwitcher.value;
+        const selectedSandbox = ui.sandboxSwitcherHeader.value;
         if (!selectedSandbox) throw new Error('Nenhuma sandbox selecionada.');
 
         const data = await window.api.aepRequest({
@@ -373,7 +389,7 @@ async function fetchAndPopulateMergePolicies() {
 async function fetchAndPopulateNamespaces() {
     try {
         ui.namespaceSelect.innerHTML = '<option value="">Carregando...</option>';
-        const selectedSandbox = ui.sandboxSwitcher.value;
+        const selectedSandbox = ui.sandboxSwitcherHeader.value;
         if (!selectedSandbox) throw new Error('Nenhuma sandbox selecionada.');
 
         const data = await window.api.aepRequest({
@@ -444,7 +460,7 @@ async function initAudienceExplorer() {
     });
 
     // Reload data when sandbox changes
-    ui.sandboxSwitcher.addEventListener('change', async () => {
+    ui.sandboxSwitcherHeader.addEventListener('change', async () => {
         if (document.querySelector('.view.active').dataset.viewId === 'audience-explorer') {
             audienceExplorer_state.fullData = await audienceExplorer_loadAllData();
             audienceExplorer_handleFilter();
@@ -457,7 +473,7 @@ async function initAudienceExplorer() {
 // --- Event Handlers ---
 
 function handleSandboxChange() {
-    const selectedSandbox = ui.sandboxSwitcher.value;
+    const selectedSandbox = ui.sandboxSwitcherHeader.value;
     if (!selectedSandbox) return;
     // window.api.setActiveSandbox(selectedSandbox); // This function does not exist
     // Refresh context-sensitive data
@@ -487,7 +503,7 @@ async function handleSendRequest() {
             }
         });
 
-        const selectedSandbox = ui.sandboxSwitcher.value;
+        const selectedSandbox = ui.sandboxSwitcherHeader.value;
         if (!selectedSandbox) throw new Error('Nenhuma sandbox selecionada.');
 
         const data = await window.api.aepRequest({
@@ -525,9 +541,9 @@ function buildEventView(responseData) {
         eventContainer.className = 'event-container';
         const entity = event.entity;
         const date = new Date(event.timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' });
-        
+
         // Initial call with an empty string for the base path, and level 0
-        let tableBodyHTML = generateRowsFromObject(entity, '', 0); 
+        let tableBodyHTML = generateRowsFromObject(entity, '', 0);
 
         eventContainer.innerHTML = `
             <details open>
@@ -566,7 +582,9 @@ function generateRowsFromObject(obj, path, level = 0) {
             const newPath = path ? `${path}.${key}` : key;
             const padding = level * 24; // 24px padding per level
 
-            const pathCopyButton = `<button class="copy-btn" title="Copiar caminho" onclick="navigator.clipboard.writeText('${newPath}')">📋</button>`;
+            const escapeSingleQuotes = (str) => String(str).replace(/'/g, "\'");
+
+            const pathCopyButton = `<button class="copy-btn" title="Copiar caminho" onclick="navigator.clipboard.writeText('${escapeSingleQuotes(newPath)}')">Copy</button>`;
 
             if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 rowsHTML += `<tr>
@@ -577,7 +595,7 @@ function generateRowsFromObject(obj, path, level = 0) {
                 rowsHTML += generateRowsFromObject(value, newPath, level + 1);
             } else {
                 const displayValue = JSON.stringify(value, null, 2).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                
+
                 let valueClass = 'text-gray-700';
                 if (typeof value === 'string') {
                     valueClass = 'text-green-700';
@@ -587,9 +605,8 @@ function generateRowsFromObject(obj, path, level = 0) {
                     valueClass = 'text-purple-700';
                 }
 
-                // For clipboard, escape single quotes and backslashes in the string value
                 const clipboardValue = typeof value === 'string' ? JSON.stringify(value).slice(1, -1) : value;
-                const valueCopyButton = `<button class="copy-btn" title="Copiar valor" onclick="navigator.clipboard.writeText('${clipboardValue}')">📋</button>`;
+                const valueCopyButton = `<button class="copy-btn" title="Copiar valor" onclick="navigator.clipboard.writeText('${escapeSingleQuotes(clipboardValue)}')">Copy</button>`;
 
                 rowsHTML += `<tr>
                                 <td style="padding-left: ${padding}px;">${key}</td>
@@ -630,7 +647,7 @@ async function handleFetchJornadas() {
     reportButton.style.display = 'none';
 
     try {
-        const selectedSandbox = ui.sandboxSwitcher.value;
+        const selectedSandbox = ui.sandboxSwitcherHeader.value;
         if (!selectedSandbox) throw new Error('Nenhuma sandbox selecionada.');
 
         const data = await window.api.aepRequest({
@@ -701,9 +718,9 @@ function findAudiencesInJourney(journey) {
                             }
                         }
                     }
-                    
+
                     if (!audiences.some(a => a.id === audienceId)) {
-                         audiences.push({ name: audienceName, id: audienceId });
+                        audiences.push({ name: audienceName, id: audienceId });
                     }
                 }
             }
@@ -718,7 +735,7 @@ function buildStepsHtml(journey) {
     }
 
     let stepsHtml = '<div class="p-4 border-t border-gray-200"><h4 class="text-md font-semibold text-gray-700 mb-2">Steps da Jornada:</h4><ul class="list-decimal list-inside pl-4 space-y-1">';
-    
+
     journey.steps.forEach(step => {
         const stepName = step.nodeName || step.name || `Step`;
         const stepType = step.nodeType || 'N/A';
@@ -762,7 +779,7 @@ function buildJornadasView(data) {
         const audiences = findAudiencesInJourney(journey);
         const stepsHtml = buildStepsHtml(journey);
         const statusColor = getStatusColor(journey.state);
-        
+
         let audiencesHtml = '';
         if (audiences.length > 0) {
             audiencesHtml += '<div class="p-4"><h4 class="text-md font-semibold text-gray-700 mb-2">Audiências na Jornada:</h4><ul class="list-disc list-inside pl-4">';
@@ -800,7 +817,7 @@ function handleGenerateAudienceReport() {
         alert('Nenhum dado de jornada para gerar o relatório. Busque as jornadas primeiro.');
         return;
     }
-    
+
     const nameFilter = ui.jornadasFilterInput.value.toLowerCase();
     const statusFilter = ui.jornadasStatusFilter.value;
     const currentlyVisibleJourneys = allJourneysData.results.filter(journey => {
@@ -841,6 +858,7 @@ function handleGenerateAudienceReport() {
 
 // --- App Initialization ---
 function init() {
+    console.log("Initializing app...");
     // Setup navigation
     ui.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -857,7 +875,7 @@ function init() {
         ui.tokenContainer.style.display = isHidden ? 'block' : 'none';
         ui.toggleButton.textContent = isHidden ? 'Esconder Token' : 'Mostrar Token';
     });
-    ui.sandboxSwitcher.addEventListener('change', handleSandboxChange);
+    ui.sandboxSwitcherHeader.addEventListener('change', handleSandboxChange);
 
     // Setup view-specific buttons
     ui.sendRequestButton.addEventListener('click', handleSendRequest);
@@ -867,11 +885,15 @@ function init() {
         configBody.classList.toggle('open');
         chevron.classList.toggle('expanded');
     });
-    
+
     ui.jornadasFetchButton.addEventListener('click', handleFetchJornadas);
     ui.jornadasReportButton.addEventListener('click', handleGenerateAudienceReport);
     ui.jornadasFilterInput.addEventListener('input', applyJourneyFilters);
     ui.jornadasStatusFilter.addEventListener('change', applyJourneyFilters);
+
+    ui.debugToggle.addEventListener('change', (e) => {
+        audienceExplorer_state.debug = e.target.checked;
+    });
 
     // Listen for context updates from the main process
     window.api.onContextUpdate((data) => {

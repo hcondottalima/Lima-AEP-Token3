@@ -1,5 +1,5 @@
 
-const { app, BrowserWindow, ipcMain, net, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, net, dialog, shell } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -201,6 +201,10 @@ ipcMain.on('save-csv', (event, content) => {
   }).catch(err => {
     console.error('Error showing save dialog:', err);
   });
+});
+
+ipcMain.on('open-external', (event, url) => {
+    shell.openExternal(url);
 });
 
 app.whenReady().then(() => {

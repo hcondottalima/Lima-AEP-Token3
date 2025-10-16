@@ -11,33 +11,63 @@
 
         body {
             font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
     </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#02455C',
+                        'primary-hover': '#013446',
+                        'accent': '#F98509',
+                        'accent-hover': '#e07508',
+                        'text-main': '#231F20',
+                        'text-light': '#555',
+                        'bkg-page': '#f7f8fa',
+                        'surface': '#ffffff',
+                        'border-color': '#e2e8f0',
+                        'danger': '#dc2626',
+                        'danger-light': '#fef2f2',
+                        'warning': '#f59e0b',
+                        'warning-light': '#fffbeb',
+                    },
+                }
+            }
+        }
+    </script>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-bkg-page">
 
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Jornadas da Adobe</h1>
-            <p class="text-gray-600 mt-2">Insira seu token de autorização e filtre por nome para visualizar as jornadas.
-            </p>
+        <div class="bg-surface rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-3xl font-bold text-text-main">Jornadas da Adobe</h1>
+            <p class="text-text-light mt-2">Insira seu token de autorização e filtre por nome para visualizar as jornadas.</p>
 
-            <div class="mt-4 space-y-2">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="authToken" placeholder="Cole seu Bearer Token aqui"
-                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
-                    <input type="text" id="filterInput" placeholder="Filtrar por nome nos resultados..."
-                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow"
-                        disabled>
+            <div class="mt-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="authToken" class="text-sm font-medium text-text-main mb-1">Bearer Token</label>
+                        <input type="text" id="authToken" placeholder="Cole seu Bearer Token aqui"
+                            class="w-full p-3 border border-border-color rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-shadow">
+                    </div>
+                    <div>
+                        <label for="filterInput" class="text-sm font-medium text-text-main mb-1">Filtrar por Nome</label>
+                        <input type="text" id="filterInput" placeholder="Filtrar nos resultados..."
+                            class="w-full p-3 border border-border-color rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-shadow"
+                            disabled>
+                    </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                <div class="flex flex-col sm:flex-row gap-4 pt-2">
                     <button id="fetchButton"
-                        class="w-full sm:w-auto flex-grow bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                        class="w-full sm:w-auto flex-grow bg-primary text-white font-bold py-3 px-6 rounded-lg hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
                         Buscar Jornadas
                     </button>
                     <button id="reportButton"
-                        class="w-full sm:w-auto flex-grow bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        class="w-full sm:w-auto flex-grow bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors"
                         disabled>
                         Gerar Relatório de Audiências
                     </button>
@@ -46,29 +76,29 @@
         </div>
 
         <div id="journeys-container" class="space-y-6">
-            <div id="initial-message" class="text-center p-8 bg-white rounded-xl shadow-md">
-                <p class="text-gray-500">Aguardando a busca para exibir as jornadas.</p>
+            <div id="initial-message" class="text-center p-8 bg-surface rounded-lg shadow-md">
+                <p class="text-text-light">Aguardando a busca para exibir as jornadas.</p>
             </div>
         </div>
 
         <div id="report-container" class="hidden mt-6">
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Relatório de Audiências</h2>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+            <div class="bg-surface rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-text-main mb-4">Relatório de Audiências</h2>
+                <table class="min-w-full divide-y divide-border-color">
+                    <thead class="bg-bkg-page">
                         <tr>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-6 py-3 text-left text-xs font-medium text-text-light uppercase tracking-wider">
                                 Jornada</th>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-6 py-3 text-left text-xs font-medium text-text-light uppercase tracking-wider">
                                 Nome da Audiência</th>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-6 py-3 text-left text-xs font-medium text-text-light uppercase tracking-wider">
                                 ID da Audiência</th>
                         </tr>
                     </thead>
-                    <tbody id="report-table-body" class="bg-white divide-y divide-gray-200">
+                    <tbody id="report-table-body" class="bg-surface divide-y divide-border-color">
                         <!-- Linhas do relatório serão inseridas aqui -->
                     </tbody>
                 </table>
@@ -122,12 +152,11 @@
 
                     if (stepAudiences.length > 0) {
                         audienceHtml = 
-                            `<div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                                <h4 class="text-sm font-semibold text-gray-600">Audiências na Jornada:</h4>
-                                <ul class="mt-1 text-xs text-gray-800 list-disc list-inside">
+                            `<div class="mt-4 p-3 bg-bkg-page rounded-lg">
+                                <h4 class="text-sm font-semibold text-text-light">Audiências na Jornada:</h4>
+                                <ul class="mt-1 text-xs text-text-main list-disc list-inside">
                                     ${stepAudiences.map(aud => 
                                         `<li>
-                                            <strong>Nome:</strong> ${aud.name} <br>
                                             <strong>ID:</strong> ${aud.id}
                                         </li>`
                                     ).join('')}
@@ -150,9 +179,9 @@
                         }
 
                         audienceHtml += 
-                            `<div class="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <h4 class="text-sm font-semibold text-yellow-800">Audiência de Início (Batch):</h4>
-                                <div class="mt-1 text-xs text-gray-800">
+                            `<div class="mt-4 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                                <h4 class="text-sm font-semibold text-accent-hover">Audiência de Início (Batch):</h4>
+                                <div class="mt-1 text-xs text-text-main">
                                     <p><strong>Nome:</strong> ${segmentName}</p>
                                     <p><strong>ID:</strong> ${segmentId}</p>
                                 </div>
@@ -160,16 +189,25 @@
                         `;
                     }
 
+                    const stateColors = {
+                        'deployed': 'text-white bg-primary',
+                        'draft': 'text-text-main bg-gray-200',
+                        'live': 'text-white bg-green-500',
+                        'stopped': 'text-white bg-danger',
+                        'closed': 'text-white bg-gray-500',
+                        'default': 'text-text-main bg-gray-200'
+                    };
+                    const stateClass = stateColors[journey.state] || stateColors.default;
 
                     const journeyCard = 
-                        `<div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        `<div class="bg-surface rounded-lg shadow-md overflow-hidden">
                             <div class="p-6">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <div class="tracking-wide text-sm text-indigo-500 font-semibold">${journey.name}</div>
-                                        <p class="block mt-1 text-lg leading-tight font-medium text-black">${journey.journey}</p>
+                                        <div class="tracking-wide text-sm text-primary font-semibold">${journey.name}</div>
+                                        <p class="block mt-1 text-lg leading-tight font-medium text-text-main">${journey.journey}</p>
                                     </div>
-                                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full ${journey.state === 'deployed' ? 'text-green-600 bg-green-200' : 'text-yellow-600 bg-yellow-200'}">
+                                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full ${stateClass}">
                                         ${journey.state ?? 'N/A'}
                                     </span>
                                 </div>
@@ -180,7 +218,7 @@
                     container.innerHTML += journeyCard;
                 });
             } else {
-                container.innerHTML = '<p class="text-center text-gray-500">Nenhuma jornada encontrada com o filtro aplicado.</p>';
+                container.innerHTML = '<p class="text-center text-text-light">Nenhuma jornada encontrada com o filtro aplicado.</p>';
             }
         }
 
@@ -192,7 +230,7 @@
 
             if (!token) {
                 container.innerHTML = 
-                    `<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg" role="alert">
+                    `<div class="bg-warning-light border border-warning text-yellow-800 px-4 py-3 rounded-lg" role="alert">
                         <strong class="font-bold">Atenção!</strong>
                         <span class="block sm:inline">Por favor, insira um token de autorização.</span>
                     </div>
@@ -201,8 +239,8 @@
             }
 
             container.innerHTML = 
-                `<div class="text-center p-8 bg-white rounded-xl shadow-md">
-                    <p class="text-gray-500">Carregando jornadas...</p>
+                `<div class="text-center p-8 bg-surface rounded-lg shadow-md">
+                    <p class="text-text-light">Carregando jornadas...</p>
                 </div>
             `;
             filterInput.disabled = true;
@@ -210,31 +248,20 @@
 
             const myHeaders = new Headers();
             myHeaders.append("Accept", "*/*");
-            myHeaders.append("Authorization", 
-`Bearer ${token}`
-);
+            myHeaders.append("Authorization", `Bearer ${token}`);
             myHeaders.append("x-api-key", "voyager_ui");
             myHeaders.append("x-gw-ims-org-id", "88971E916756E8850A495FDE@AdobeOrg");
             myHeaders.append("x-sandbox-name", "prod");
 
-            const requestOptions = {
-                method: "GET",
-                headers: myHeaders,
-                redirect: "follow"
-            };
-
+            const requestOptions = { method: "GET", headers: myHeaders, redirect: "follow" };
             const adobeApiUrl = "https://journey-private.adobe.io/authoring/journeyVersions/";
-            const proxyUrl = 
-`https://corsproxy.io/?${encodeURIComponent(adobeApiUrl)}`
-;
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(adobeApiUrl)}`;
 
             try {
                 const response = await fetch(proxyUrl, requestOptions);
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(
-`Erro na requisição: ${response.status} ${response.statusText}. ${errorText}`
-);
+                    throw new Error(`Erro na requisição: ${response.status} ${response.statusText}. ${errorText}`);
                 }
                 const data = await response.json();
                 allJourneys = data.results || [];
@@ -244,7 +271,7 @@
             } catch (error) {
                 console.error('Erro ao buscar jornadas:', error);
                 container.innerHTML = 
-                    `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+                    `<div class="bg-danger-light border border-danger text-red-700 px-4 py-3 rounded-lg" role="alert">
                         <strong class="font-bold">Ocorreu um erro!</strong>
                         <span class="block sm:inline">Não foi possível carregar os dados. Verifique o console para detalhes.</span>
                     </div>
@@ -266,9 +293,9 @@
                     stepAudiences.forEach(aud => {
                         const row = 
                             `<tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${journey.name}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${aud.name}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${aud.id}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${journey.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${aud.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${aud.id}</td>
                             </tr>
                         `;
                         tableBody.innerHTML += row;
@@ -288,9 +315,9 @@
                         }
                      const row = 
                             `<tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${journey.name}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${segmentName} (Audiência de Início)</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${segmentId}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${journey.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${segmentName} (Audiência de Início)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-text-light">${segmentId}</td>
                             </tr>
                         `;
                         tableBody.innerHTML += row;
@@ -298,7 +325,7 @@
             });
 
             if (!hasAudience) {
-                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Nenhuma audiência encontrada nas jornadas carregadas.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-text-light">Nenhuma audiência encontrada nas jornadas carregadas.</td></tr>';
             }
 
             reportContainer.classList.remove('hidden');

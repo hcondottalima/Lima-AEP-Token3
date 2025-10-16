@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   reauthenticate: () => ipcRenderer.send('re-authenticate'),
 
   // Function to save a CSV file
-  saveCsv: (content) => ipcRenderer.send('save-csv', content)
+  saveCsv: (content) => ipcRenderer.send('save-csv', content),
+
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 });

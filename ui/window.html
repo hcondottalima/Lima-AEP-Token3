@@ -4,22 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <title>Lima AEP Tool</title>
-    <script src="tailwind.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="tailwind.js"></script>
     <style>
-        /* Reset Básico */
+        /* Reset Básico e Variáveis de Cor */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        :root {
+            --color-primary: #02455C;
+            --color-accent: #F98509;
+            --color-text: #231F20;
+            --color-background: #f7f8fa;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+        }
+
         body,
         html {
             height: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Layout Principal */
@@ -34,7 +48,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #222;
+            background-color: var(--color-primary);
             color: white;
             padding: 10px 20px;
             flex-shrink: 0;
@@ -50,10 +64,26 @@
             width: 24px;
             height: 24px;
             margin-right: 10px;
+            filter: invert(1);
         }
 
         .header-org {
             font-size: 14px;
+        }
+
+        #refresh-auth-button {
+            margin-left: 15px;
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #refresh-auth-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
         /* Wrapper do Conteúdo Principal */
@@ -66,8 +96,8 @@
         /* Menu Lateral (Sidebar) */
         nav {
             width: 240px;
-            background-color: #fafafa;
-            border-right: 1px solid #ddd;
+            background-color: var(--color-surface);
+            border-right: 1px solid var(--color-border);
             padding: 20px 10px;
             display: flex;
             flex-direction: column;
@@ -77,6 +107,7 @@
         nav h4 {
             text-transform: uppercase;
             font-size: 11px;
+            font-weight: 600;
             color: #888;
             margin-top: 20px;
             margin-bottom: 10px;
@@ -92,19 +123,22 @@
             align-items: center;
             padding: 10px;
             text-decoration: none;
-            color: #333;
-            border-radius: 4px;
+            color: var(--color-text);
+            border-radius: 6px;
             margin-bottom: 5px;
             font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         nav a:hover {
-            background-color: #eee;
+            background-color: #f0f2f5;
         }
 
         nav a.active {
-            background-color: #e0e0e0;
-            font-weight: bold;
+            background-color: var(--color-accent);
+            color: white;
+            font-weight: 600;
         }
 
         .nav-bottom {
@@ -120,430 +154,178 @@
 
         .view {
             display: none;
-            /* Todas as "telas" começam escondidas */
         }
 
         .view.active {
             display: block;
-            /* A "tela" ativa é mostrada */
         }
+        
+        h1 { font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
+        p { color: #555; }
 
-        main#content.audience-view-active {
-            padding: 0;
+
+        /* Estilos dos Componentes */
+        .card {
+            background-color: var(--color-surface);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 20px;
+            padding: 1.5rem;
         }
-
-        .view[data-view-id="audience-explorer"] {
-            height: 100%;
-        }
-
-        /* Estilo dos Campos de Informação (como na imagem) */
+        
         .info-item {
             margin-bottom: 20px;
         }
 
         .info-item label {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             color: #555;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 600;
         }
 
-        .info-display {
+        .info-display, .form-group input, .form-group select, .search-controls select, .search-controls input {
             width: 100%;
             padding: 10px;
-            border: none;
-            border-bottom: 1px solid #ccc;
-            background-color: #fff;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-surface);
+            border-radius: 6px;
             font-size: 14px;
             font-family: monospace;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .sandbox-list-container {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            background-color: #fff;
-            max-height: 200px;
-            overflow-y: auto;
+        .info-display:focus, .form-group input:focus, .form-group select:focus, .search-controls select:focus, .search-controls input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(2, 69, 92, 0.1);
         }
 
-        .sandbox-item {
-            display: flex;
-            align-items: center;
-            padding: 2px 0;
-            font-size: 13px;
-        }
-
-        .sandbox-item-icon {
-            margin-right: 8px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .sandbox-item-icon.production {
-            background-color: #007bff;
-        }
-
-        .sandbox-item-icon.development {
-            background-color: #808080;
-        }
-
-        .sandbox-item.active {
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        #sandbox-toggle {
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            font-weight: bold;
-            font-size: 13px;
-            color: #555;
-            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.98);
         }
 
-        #sandbox-arrow {
-            margin-right: 5px;
-            transition: transform 0.2s;
+        .btn-primary {
+            background-color: var(--color-accent);
+            color: white;
         }
+        .btn-primary:hover { background-color: #e07508; }
+        .btn-primary:disabled { background-color: #a0a0a0; cursor: not-allowed; }
 
-        #sandbox-arrow.expanded {
-            transform: rotate(90deg);
+        .btn-secondary {
+            background-color: var(--color-primary);
+            color: white;
         }
+        .btn-secondary:hover { background-color: #013446; }
 
-        /* --- NOVOS ESTILOS PARA A TELA DE EVENTOS --- */
-        .config-container,
-        .event-container {
-            background-color: white;
+        .btn-tertiary {
+             background-color: #e2e8f0;
+             color: var(--color-text);
+        }
+        .btn-tertiary:hover { background-color: #cbd5e1; }
+
+
+        /* --- ESTILOS PARA TELA DE EVENTOS E OUTRAS --- */
+        .config-container, .batch-container {
+             background-color: var(--color-surface);
             border-radius: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--color-border);
             margin-bottom: 20px;
         }
-
         .config-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 1rem;
             cursor: pointer;
-            background-color: #f8f9fa;
+            border-bottom: 1px solid var(--color-border);
         }
+        .config-header h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+        .config-body { padding: 1.5rem; }
 
-        .config-header h2 {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { font-size: 0.875rem; font-weight: 500; color: #555; margin-bottom: 4px; }
+        .grid { display: grid; gap: 1rem; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .col-span-2 { grid-column: span 2 / span 2; }
 
-        .config-body {
-            padding: 1.5rem;
-            display: none;
-        }
-
-        .config-body.open {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #555;
-            margin-bottom: 4px;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            padding: 8px;
-            font-family: monospace;
-        }
-
-        .grid {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .grid-cols-2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .col-span-2 {
-            grid-column: span 2 / span 2;
-        }
-
-        .btn-primary {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-primary:disabled {
-            background-color: #a0a0a0;
-            cursor: not-allowed;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #555;
-        }
-
-        td code {
-            background-color: #eee;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .chevron-icon {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-            transition: transform 0.2s;
-        }
-
-        .chevron-icon.expanded {
-            transform: rotate(180deg);
-        }
-
-        .event-icon {
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
-            /* Impede que o ícone seja espremido */
-            margin-right: 12px;
-        }
-
-        .config-container,
-        .event-container,
-        .batch-container {
-            background-color: white;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-
-        .config-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-            cursor: pointer;
-            background-color: #f8f9fa;
-        }
-
-        .config-header h2 {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .config-body {
-            padding: 1.5rem;
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #555;
-            margin-bottom: 4px;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            padding: 8px;
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .btn-primary {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-primary:disabled {
-            background-color: #a0a0a0;
-            cursor: not-allowed;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            font-size: 13px;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #555;
-        }
-
-        td code {
-            background-color: #eee;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .chevron-icon {
-            transition: transform 0.2s;
-        }
-
-        .chevron-icon.expanded {
-            transform: rotate(180deg);
-        }
-
-        details>summary {
-            list-style: none;
-        }
-
-        details>summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .copy-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            opacity: 0.3;
-            transition: opacity 0.2s;
-            vertical-align: middle;
-        }
-        .copy-btn:hover {
-            opacity: 1;
-        }
-        tr:hover .copy-btn {
-            opacity: 1;
-        }
-        td {
-            vertical-align: top;
-        }
-
-        /* --- NOVOS ESTILOS PARA OS CONTROLES DE BUSCA --- */
         .search-controls {
             display: flex;
             gap: 1rem;
             margin-bottom: 1.5rem;
             padding: 1rem;
             background-color: #fff;
-            border: 1px solid #ddd;
+            border: 1px solid var(--color-border);
             border-radius: 8px;
         }
-
-        .search-controls select,
-        .search-controls input {
-            width: 100%;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            padding: 8px;
+        
+        .chevron-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+        .chevron-icon.expanded {
+            transform: rotate(180deg);
         }
 
-        /* Custom scrollbar for better aesthetics in dark mode */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a202c;
-            /* bg-gray-800 */
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #4a5568;
-            /* bg-gray-600 */
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #718096;
-            /* bg-gray-500 */
-        }
-
-        /* Styles for the JSON tree view */
+        /* Audience Explorer Tree */
         .tree ul {
-            padding-left: 1.5rem;
-            border-left: 1px solid #4a5568;
-            /* bg-gray-600 */
+            padding-left: 1rem;
+            border-left: 1px solid var(--color-border);
         }
-
         .tree li {
             position: relative;
             list-style: none;
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
+            padding: 2px 0;
         }
-
         .tree .tree-node {
             cursor: pointer;
             display: flex;
             align-items: center;
-            padding: 4px;
-            border-radius: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
-
         .tree .tree-node:hover {
-            background-color: #2d3748;
-            /* bg-gray-700 */
+            background-color: #f0f2f5;
         }
-
         .tree .tree-node.selected {
-            background-color: #4299e1;
-            /* bg-blue-500 */
+            background-color: var(--color-primary);
             color: white;
         }
+        .tree .tree-node.selected .key {
+            color: white;
+        }
+        .tree .key {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
 
-        .key {
-            color: #90cdf4;
-            /* text-blue-300 */
-            font-weight: bold;
+        /* JSON Viewer Styles */
+        .json-key { color: var(--color-accent); font-weight: 600; }
+        .json-string { color: #0c9d58; } /* A clear green */
+        .json-number { color: #4285f4; } /* A clear blue */
+        .json-boolean { color: #9c27b0; } /* A clear purple */
+        .json-null { color: #9e9e9e; } /* Grey */
+        .json-link { color: #4285f4; text-decoration: none; }
+        .json-link:hover { text-decoration: underline; }
+
+        #sandbox-switcher-header option {
+            color: #231F20;
+            background-color: white;
         }
     </style>
-
 </head>
 
 <body>
@@ -554,7 +336,17 @@
                 <span id="header-title-text">Lima AEP Tool</span>
             </div>
             <div class="header-org" id="header-org-name"></div>
-            <button id="refresh-auth-button" style="margin-left: 15px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Trocar Org</button>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <label for="sandbox-switcher-header" style="font-size: 12px; color: white; user-select: none;">Sandbox:</label>
+                    <select id="sandbox-switcher-header" style="background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white; padding: 2px 5px;"></select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <input id="debugToggle" type="checkbox" style="width: 16px; height: 16px;">
+                    <label for="debugToggle" style="font-size: 12px; color: white; user-select: none;">Debug</label>
+                </div>
+                <button id="refresh-auth-button">Trocar Org</button>
+            </div>
         </header>
 
         <div class="main-wrapper">
@@ -576,32 +368,28 @@
 
             <main id="content">
                 <div class="view active" id="summary-view" data-view-id="summary">
-                    <pre id="raw-data-container" style="background-color: #eee; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Aguardando dados...</pre>
-                    <div class="info-item">
-                        <label for="org-name-display">Org Name:</label>
-                        <div class="info-display" id="org-name-display"></div>
-                    </div>
-                    <div class="info-item">
-                        <label for="tenant-id-display">Tenant ID:</label>
-                        <div class="info-display" id="tenant-id-display"></div>
-                    </div>
-                    <div class="info-item">
-                        <label for="ims-org-display">IMS Org ID:</label>
-                        <div class="info-display" id="ims-org-display"></div>
-                    </div>
-                    <div class="info-item">
-                        <label for="client-id-display">Client ID:</label>
-                        <div class="info-display" id="client-id-display"></div>
-                    </div>
-                    <div class="info-item">
-                        <label for="sandbox-switcher">Sandbox Ativa:</label>
-                        <select id="sandbox-switcher" class="info-display"></select>
-                    </div>
-                    <button id="toggle-button">Mostrar Token</button>
-                    <div id="token-container" style="display: none;">
+                    <pre id="raw-data-container" style="display: none;"></pre>
+                    <h1>Resumo da Organização</h1>
+                    <p>Informações e credenciais da organização atualmente selecionada.</p>
+                    <div class="card" style="margin-top: 1.5rem;">
                         <div class="info-item">
-                            <label for="token-display">Access Token:</label>
-                            <div class="info-display" id="token-display"></div>
+                            <label for="org-name-display">Org Name:</label>
+                            <div class="info-display" id="org-name-display"></div>
+                        </div>
+                        <div class="info-item">
+                            <label for="tenant-id-display">Tenant ID:</label>
+                            <div class="info-display" id="tenant-id-display"></div>
+                        </div>
+                        <div class="info-item">
+                            <label for="ims-org-display">IMS Org ID:</label>
+                            <div class="info-display" id="ims-org-display"></div>
+                        </div>
+                        <button id="toggle-button" class="btn btn-tertiary">Mostrar Token</button>
+                        <div id="token-container" style="display: none; margin-top: 1rem;">
+                            <div class="info-item">
+                                <label for="token-display">Access Token:</label>
+                                <div class="info-display" id="token-display" style="word-break: break-all;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -657,7 +445,7 @@
                                 </div>
 
                                 <div>
-                                    <button id="send-request-btn" class="btn-primary">Buscar Eventos</button>
+                                    <button id="send-request-btn" class="btn btn-primary">Buscar Eventos</button>
                                 </div>
                             </div>
 
@@ -723,7 +511,7 @@
                                     <input type="text" id="jornadas-filterInput"
                                         placeholder="Filtrar por nome nos resultados..."
                                         class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
-                                    <select id="jornadas-statusFilter" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-shadow">
+                                    <select id="jornadas-statusFilter" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none transition-shadow focus:ring-[#02455C]">
                                         <option value="">Todos os Status</option>
                                         <option value="live">Live</option>
                                         <option value="draft">Draft</option>
@@ -753,26 +541,26 @@
                         </div>
                     </div>
                 </div>
-                <div class="view bg-gray-900 text-gray-300 font-sans" data-view-id="audience-explorer" style="height: 100%;">
+                <div class="view" data-view-id="audience-explorer" style="height: 100%;">
                     <div id="audience-app" class="flex h-full overflow-hidden">
                         <!-- Left Panel -->
-                        <aside class="w-1/3 h-full flex flex-col p-4 bg-gray-800 border-r border-gray-700">
+                        <aside class="w-1/3 h-full flex flex-col p-4 bg-[#f7f8fa] border-r border-[#e2e8f0]">
                             <header class="mb-4">
                                 <div class="flex justify-between items-center">
-                                    <h1 class="text-2xl font-bold text-white">Audience Explorer</h1>
+                                    <h1 class="text-2xl font-bold text-[#231F20]">Audience Explorer</h1>
                                     <button id="audience-exportButton"
-                                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-md transition duration-300 flex items-center justify-center text-xs">
+                                        class="btn btn-primary text-xs">
                                         <i class="fas fa-file-csv mr-2"></i>Export CSV
                                     </button>
                                 </div>
-                                <p class="text-sm text-gray-400">Browse, and filter your audience segments.</p>
+                                <p class="text-sm text-gray-600">Browse, and filter your audience segments.</p>
                             </header>
                 
                             <div class="flex items-stretch mb-4 space-x-2">
                                 <!-- Search Input -->
                                 <div class="relative flex-grow">
                                     <input type="text" id="audience-filterInput" placeholder="Filter..."
-                                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        class="w-full h-full bg-white text-[#231F20] rounded-md py-2 pl-10 pr-4 border border-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-[#02455C]">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i class="fas fa-search text-gray-400"></i>
                                     </div>
@@ -780,7 +568,7 @@
                                 <!-- Field Select -->
                                 <div class="relative">
                                     <select id="audience-filterFieldSelect"
-                                        class="w-full h-full bg-gray-700 text-white rounded-md py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                                        class="w-full h-full bg-white text-[#231F20] rounded-md py-2 pl-3 pr-8 border border-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-[#02455C] appearance-none">
                                         <option value="all" selected>All Fields</option>
                                         <option value="name">Name</option>
                                         <option value="id">ID</option>
@@ -797,7 +585,7 @@
                                 </div>
                             </div>
                 
-                            <div id="audience-stats" class="text-sm text-gray-400 mb-2">Loading data...</div>
+                            <div id="audience-stats" class="text-sm text-gray-500 mb-2">Loading data...</div>
                 
                             <div id="audience-tree-container" class="flex-grow overflow-auto pr-2">
                                 <div id="audience-loader" class="flex items-center justify-center h-full">
@@ -809,20 +597,20 @@
                         <!-- Right Panel -->
                         <div class="w-2/3 h-full p-4 flex flex-col">
                             <div class="flex-shrink-0 flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-bold text-white">Object Details</h2>
+                                <h2 class="text-xl font-bold text-[#231F20]">Object Details</h2>
                                 <button id="audience-summarizeButton"
-                                    class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center text-sm">
+                                    class="hidden btn btn-secondary text-sm">
                                     <span class="mr-2">✨</span>Summarize with AI
                                 </button>
                             </div>
-                            <div id="audience-details-container" class="bg-gray-800 rounded-lg p-4 flex-grow overflow-auto mb-4">
+                            <div id="audience-details-container" class="bg-[#f7f8fa] rounded-lg p-4 flex-grow overflow-auto mb-4 border border-[#e2e8f0]">
                                 <div class="flex items-center justify-center h-full text-gray-500">
                                     <p>Select an object from the list to see its details.</p>
                                 </div>
                             </div>
                             <div id="audience-summary-container" class="hidden flex-shrink-0">
-                                <h3 class="text-lg font-bold text-white mb-2">AI Summary</h3>
-                                <div id="audience-summary-content" class="bg-gray-800 rounded-lg p-4 text-gray-300 max-h-48 overflow-auto"></div>
+                                <h3 class="text-lg font-bold text-[#231F20] mb-2">AI Summary</h3>
+                                <div id="audience-summary-content" class="bg-[#f7f8fa] rounded-lg p-4 text-[#231F20] max-h-48 overflow-auto border border-[#e2e8f0]"></div>
                             </div>
                         </div>
                     </div>

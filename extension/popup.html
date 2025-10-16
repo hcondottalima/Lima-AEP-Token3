@@ -3,128 +3,120 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --color-primary: #02455C;
+            --color-accent: #F98509;
+            --color-text: #231F20;
+            --color-background: #f7f8fa;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text-light: #555;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             width: 450px;
-            font-family: Arial, sans-serif;
-            padding: 15px;
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            padding: 1rem;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         h3 {
-            margin-top: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
             text-align: center;
+            color: var(--color-primary);
+        }
+
+        .card {
+            background-color: var(--color-surface);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            padding: 1rem;
         }
 
         .info-item {
-            margin-bottom: 10px;
+            margin-bottom: 0.85rem;
         }
 
-        .info-item strong {
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-item label {
             display: block;
             margin-bottom: 4px;
-            color: #333;
+            color: var(--color-text-light);
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        pre {
+        .info-display {
             white-space: pre-wrap;
             word-break: break-all;
-            background-color: #f0f0f0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 0;
+            background-color: var(--color-background);
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-family: monospace;
             font-size: 12px;
-            color: #000;
-            max-height: 150px;
+            max-height: 100px;
             overflow-y: auto;
         }
-
-        button {
-            padding: 8px 12px;
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #f9f9f9;
+            font-weight: 600;
+            font-size: 14px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
         }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+        .btn-secondary:hover { background-color: #013446; }
 
         #token-container {
             display: none;
+            margin-top: 1rem;
         }
-
-        /* --- ESTILOS REFINADOS PARA A LISTA DE SANDBOX --- */
-        #sandboxes-list-display {
-            text-align: left;
-            font-size: 13px;
-            line-height: 1.6;
-            max-height: 150px;
-            overflow-y: auto;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            display: none;
-        }
-
-        .sandbox-item {
-            display: flex;
-            align-items: center;
-            padding: 2px 0;
-        }
-
-        .sandbox-item-icon {
-            margin-right: 8px;
-            width: 20px;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-        }
-
-        /* Regra base para o círculo */
-        .sandbox-item-icon::before {
-            content: '';
-            /* Conteúdo vazio, o círculo é feito com background */
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: #ccc;
-            /* Cor padrão caso o tipo não seja definido */
-        }
-
-        /* Círculo azul para Production */
-        .sandbox-item-icon.production::before {
-            background-color: #007bff;
-        }
-
-        /* Círculo cinza para Development */
-        .sandbox-item-icon.development::before {
-            background-color: #808080;
-        }
-
-        /* Estilo para o texto do item ativo */
-        .sandbox-item.active {
-            font-weight: bold;
-            color: #0d6efd;
-        }
-
+        
         #sandbox-toggle {
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            user-select: none;
-            /* Impede que o texto seja selecionado ao clicar */
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 0.8rem;
+            padding: 4px;
         }
+        #sandbox-toggle:hover { text-decoration: underline; }
 
-        #sandbox-arrow {
-            margin-right: 5px;
-            transition: transform 0.2s;
-            /* Animação suave da seta */
+        #sandboxes-list-display {
+            display: none;
+            margin-top: 0.5rem;
         }
-
-        #sandbox-arrow.expanded {
-            transform: rotate(90deg);
+        .sandbox-item.active {
+            font-weight: bold;
+            color: var(--color-accent);
         }
     </style>
 </head>
@@ -132,44 +124,43 @@
 <body>
     <h3>Informações da Sessão Adobe</h3>
 
-    <div class="info-item">
-        <strong>Org Name:</strong>
-        <pre id="org-name-display">Aguardando...</pre>
-    </div>
-
-    <div class="info-item">
-        <strong>Tenant ID:</strong>
-        <pre id="tenant-id-display">Aguardando...</pre>
-    </div>
-
-    <div class="info-item">
-        <strong>IMS Org ID:</strong>
-        <pre id="ims-org-display">Aguardando...</pre>
-    </div>
-
-    <div class="info-item">
-        <strong>Client ID:</strong>
-        <pre id="client-id-display">Aguardando...</pre>
-    </div>
-
-    <div class="info-item">
-        <strong>Sandbox Ativa:</strong>
-        <pre id="last-sandbox-display">Aguardando...</pre>
-    </div>
-
-    <div class="info-item">
-        <div id="sandbox-toggle">
-            <span id="sandbox-arrow">▶</span>
-            <strong>Sandboxes Disponíveis:</strong>
-        </div>
-        <div id="sandboxes-list-display">Aguardando...</div>
-    </div>
-
-    <button id="toggle-button">Mostrar Token</button>
-    <div id="token-container">
+    <div class="card">
         <div class="info-item">
-            <strong>Access Token:</strong>
-            <pre id="token-display"></pre>
+            <label for="org-name-display">Org Name</label>
+            <div class="info-display" id="org-name-display">Aguardando...</div>
+        </div>
+        <div class="info-item">
+            <label for="tenant-id-display">Tenant ID</label>
+            <div class="info-display" id="tenant-id-display">Aguardando...</div>
+        </div>
+        <div class="info-item">
+            <label for="ims-org-display">IMS Org ID</label>
+            <div class="info-display" id="ims-org-display">Aguardando...</div>
+        </div>
+        <div class="info-item">
+            <label for="client-id-display">Client ID</label>
+            <div class="info-display" id="client-id-display">Aguardando...</div>
+        </div>
+        <div class="info-item">
+            <label for="last-sandbox-display">Sandbox Ativa</label>
+            <div class="info-display" id="last-sandbox-display">Aguardando...</div>
+        </div>
+        <div class="info-item">
+            <div id="sandbox-toggle">
+                <span id="sandbox-arrow">▶</span>
+                Sandboxes Disponíveis
+            </div>
+            <div id="sandboxes-list-display" class="info-display">Aguardando...</div>
+        </div>
+    </div>
+
+    <button id="toggle-button" class="btn btn-secondary">Mostrar Token</button>
+    <div id="token-container">
+        <div class="card">
+            <div class="info-item">
+                <label for="token-display">Access Token</label>
+                <div class="info-display" id="token-display"></div>
+            </div>
         </div>
     </div>
 
