@@ -50,26 +50,27 @@ function createAuthWindow(interactive = false) {
 
   authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: userAgent });
 
-  authWindow.webContents.openDevTools({ mode: 'detach' });
+  
 
-  if (!interactive) {
-    loginTimeout = setTimeout(() => {
-      if (authWindow && !authWindow.isDestroyed()) {
-        console.log('Login timeout reached. Showing auth window for manual login.');
-        authWindow.show();
-      }
-    }, 30000);
+  loginTimeout = setTimeout(() => {
+    if (authWindow && !authWindow.isDestroyed()) {
+      console.log('Login timeout reached. Showing auth window for manual login.');
+      authWindow.show();
+    }
+  }, 30000);
 
-    authWindow.webContents.on('dom-ready', async () => {
-        try {
-            const currentURL = await authWindow.webContents.executeJavaScript('window.location.href');
-            if (currentURL.startsWith('https://experience.adobe.com/')) {
-                const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
-                await authWindow.webContents.executeJavaScript(extractorCode);
-            }
-        } catch (e) { /* Ignore errors */ }
-    });
-  }
+  authWindow.webContents.on('dom-ready', async () => {
+      try {
+          const currentURL = await authWindow.webContents.executeJavaScript('window.location.href');
+          if (currentURL.startsWith('https://experience.adobe.com/')) {
+              const injectorCode = require('fs').readFileSync(path.join(__dirname, 'injector.js'), 'utf8');
+              await authWindow.webContents.executeJavaScript(injectorCode);
+
+              const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
+              await authWindow.webContents.executeJavaScript(extractorCode);
+          }
+      } catch (e) { /* Ignore errors */ }
+  });
 
   authWindow.on('closed', () => { authWindow = null; });
 }
@@ -85,7 +86,7 @@ function createWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ui/window.html'));
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
+  
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -141,8 +142,8 @@ ipcMain.on('request-context', () => {
   }
 });
 
-// Generic AEP request handler
 ipcMain.handle('aep-request', async (event, { path, params, sandboxName, baseUrl = 'https://platform.adobe.io', apiKey = 'acp_ui_platform' }) => {
+  console.log('aep-request: storedAuthContext', storedAuthContext);
   if (!storedAuthContext) {
     throw new Error('Authentication context is not available.');
   }
@@ -174,18 +175,19 @@ ipcMain.handle('aep-request', async (event, { path, params, sandboxName, baseUrl
           try {
             resolve(JSON.parse(body));
           } catch (e) {
-            reject({ message: 'Failed to parse JSON response.', body });
+            console.error('aep-request: Failed to parse JSON response', e);
+            reject(new Error(`Failed to parse JSON response: ${body}`));
           }
         } else {
-          reject({
-            message: `API request failed with status ${response.statusCode}`,
-            statusCode: response.statusCode,
-            body: body
-          });
+          console.error('aep-request: API request failed', response.statusCode, body);
+          reject(new Error(`API request failed with status ${response.statusCode}: ${body}`));
         }
       });
     });
-    request.on('error', (error) => { reject(error); });
+    request.on('error', (error) => {
+      console.error('aep-request: Request error', error);
+      reject(error);
+    });
     request.end();
   });
 });
@@ -218,6 +220,7 @@ ipcMain.on('save-csv', (event, content) => {
 ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
 });
+
 
 app.whenReady().then(() => {
   startAuthentication();

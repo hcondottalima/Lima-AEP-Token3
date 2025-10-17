@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJO Campaign Viewer</title>
+    <script src="tailwind.js"></script>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-blue-600 text-white p-4">
+        <h1 class="text-2xl">AJO Campaign Viewer</h1>
+        <p>Browse, filter, and visualize your Adobe Journey Optimizer campaigns.</p>
+    </header>
+
+    <main class="p-4">
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            <h2 class="text-xl mb-2">Filters</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" id="filter-name" placeholder="Campaign Name" class="p-2 border rounded">
+                <select id="filter-status" class="p-2 border rounded">
+                    <option value="">All Statuses</option>
+                    <option value="live">Live</option>
+                    <option value="draft">Draft</option>
+                    <option value="finished">Finished</option>
+                    <option value="archived">Archived</option>
+                </select>
+                <input type="text" id="filter-channel" placeholder="Channel" class="p-2 border rounded">
+                <input type="text" id="filter-audienceId" placeholder="Audience ID" class="p-2 border rounded">
+                <input type="text" id="filter-category" placeholder="Category" class="p-2 border rounded">
+                <input type="text" id="filter-namespace" placeholder="Identity Namespace" class="p-2 border rounded">
+            </div>
+            <div id="active-filters" class="mt-4"></div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl mb-2">Campaigns</h2>
+            <div id="campaign-list" class="space-y-4"></div>
+            <div id="pagination" class="mt-4 flex justify-between items-center"></div>
+        </div>
+    </main>
+
+    <div id="modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white p-4 rounded-lg shadow-lg w-3/4 h-3/4 overflow-auto">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl">Campaign Details</h2>
+                <button id="modal-close" class="text-red-500">Close</button>
+            </div>
+            <pre id="modal-content" class="bg-gray-200 p-2 rounded"></pre>
+        </div>
+    </div>
+
+    <script src="ajo.js"></script>
+</body>
+</html>

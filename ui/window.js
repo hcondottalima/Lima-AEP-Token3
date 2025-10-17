@@ -429,6 +429,159 @@ async function fetchAndPopulateNamespaces() {
     }
 }
 
+
+// --- AJO Campaign Viewer State ---
+const ajoState = {
+    allCampaignsOnPage: [],
+    isInitialized: false
+};
+
+
+function ajo_getStatusColor(status) {
+    const colors = {
+        SCHEDULED: 'bg-blue-100 text-blue-800',
+        DRAFT: 'bg-gray-100 text-gray-800',
+        LIVE: 'bg-green-100 text-green-800',
+        FINISHED: 'bg-purple-100 text-purple-800',
+        ARCHIVED: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+}
+
+function ajo_renderCampaigns(campaigns) {
+    getElement('ajo-campaign-list').innerHTML = campaigns.map(campaign => `
+        <div class="border p-4 rounded-lg">
+            <div class="flex justify-between items-center">
+                <span class="px-2 py-1 text-xs font-semibold text-white ${ajo_getStatusColor(campaign.status)} rounded-full">${campaign.status}</span>
+                <button class="text-blue-500 view-details" data-campaign='${JSON.stringify(campaign)}'>Ver Detalhes</button>
+            </div>
+            <h3 class="text-lg font-bold mt-2">${campaign.name}</h3>
+            <p><strong>Channels:</strong> ${campaign.packages.map(p => p.channel).join(', ')}</p>
+            <p><strong>Created By:</strong> ${campaign.createdByName}</p>
+            <p class="text-sm text-gray-500">Modified by ${campaign.modifiedByName} on ${new Date(campaign.modifiedAt).toLocaleDateString()}</p>
+        </div>
+    `).join('');
+}
+
+// --- AJO Campaign Viewer Functions ---
+async function ajo_fetchCampaigns(page = 1) {
+    try {
+        const sandboxName = ui.sandboxSwitcherHeader.value;
+        if (!sandboxName) {
+            throw new Error("No sandbox selected.");
+        }
+
+        const response = await window.api.aepRequest({
+            path: '/journey/campaigns/service/campaigns',
+            params: `orderby=-modifiedAt&page=${page}&count=10&campaignType=Scheduled`,
+            sandboxName: sandboxName
+        });
+
+        console.log('AJO Campaigns API Response:', response);
+
+        ajoState.allCampaignsOnPage = response.data || [];
+        ajo_renderCampaigns(ajoState.allCampaignsOnPage);
+        ajo_renderPagination(response._page);
+    } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        getElement('ajo-campaign-list').innerHTML = `<p class="text-red-500">Failed to load campaigns. Error: ${error.message}</p>`;
+    }
+}
+
+function ajo_renderPagination(pageInfo) {
+    if (!pageInfo) {
+        getElement('ajo-pagination').innerHTML = '';
+        return;
+    }
+    const { page, totalPages } = pageInfo;
+    getElement('ajo-pagination').innerHTML = `
+        <button id="ajo-prev-page" ${page <= 1 ? 'disabled' : ''} class="btn btn-primary">Previous</button>
+        <span>Page ${page} of ${totalPages}</span>
+        <button id="ajo-next-page" ${page >= totalPages ? 'disabled' : ''} class="btn btn-primary">Next</button>
+    `;
+
+    getElement('ajo-prev-page').addEventListener('click', () => ajo_fetchCampaigns(page - 1));
+    getElement('ajo-next-page').addEventListener('click', () => ajo_fetchCampaigns(page + 1));
+}
+
+
+function ajo_applyFilters() {
+    const activeFilters = {};
+    const filters = {
+        name: getElement('ajo-filter-name').value,
+        status: getElement('ajo-filter-status').value,
+        channel: getElement('ajo-filter-channel').value,
+        audienceId: getElement('ajo-filter-audienceId').value,
+        category: getElement('ajo-filter-category').value,
+        namespace: getElement('ajo-filter-namespace').value,
+    };
+
+    for (const key in filters) {
+        if (filters[key]) {
+            activeFilters[key] = filters[key];
+        }
+    }
+
+    const filteredCampaigns = ajoState.allCampaignsOnPage.filter(campaign => {
+        return Object.entries(activeFilters).every(([key, value]) => {
+            const campaignValue = campaign[key] || '';
+            return campaignValue.toLowerCase().includes(value.toLowerCase());
+        });
+    });
+
+    ajo_renderCampaigns(filteredCampaigns);
+    ajo_renderActiveFilters(activeFilters);
+}
+
+function ajo_renderActiveFilters(activeFilters) {
+    getElement('ajo-active-filters').innerHTML = Object.entries(activeFilters).map(([key, value]) => `
+        <span class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
+            ${key}: ${value}
+            <button class="ml-2 text-red-500 remove-filter" data-filter="${key}">x</button>
+        </span>
+    `).join('');
+}
+
+function initAjoCampaignViewer() {
+    if (ajoState.isInitialized) return;
+
+    const filters = {
+        name: getElement('ajo-filter-name'),
+        status: getElement('ajo-filter-status'),
+        channel: getElement('ajo-filter-channel'),
+        audienceId: getElement('ajo-filter-audienceId'),
+        category: getElement('ajo-filter-category'),
+        namespace: getElement('ajo-filter-namespace'),
+    };
+
+    Object.values(filters).forEach(filter => {
+        filter.addEventListener('input', ajo_applyFilters);
+    });
+
+    getElement('ajo-active-filters').addEventListener('click', event => {
+        if (event.target.classList.contains('remove-filter')) {
+            const filterKey = event.target.dataset.filter;
+            getElement(`ajo-filter-${filterKey}`).value = '';
+            ajo_applyFilters();
+        }
+    });
+
+    getElement('ajo-campaign-list').addEventListener('click', event => {
+        if (event.target.classList.contains('view-details')) {
+            const campaignData = JSON.parse(event.target.dataset.campaign);
+            getElement('ajo-modal-content').textContent = JSON.stringify(campaignData, null, 2);
+            getElement('ajo-modal').classList.remove('hidden');
+        }
+    });
+
+    getElement('ajo-modal-close').addEventListener('click', () => {
+        getElement('ajo-modal').classList.add('hidden');
+    });
+
+    ajo_fetchCampaigns(1);
+    ajoState.isInitialized = true;
+}
+
 // --- View Switching Logic ---
 function switchView(viewId) {
     ui.views.forEach(view => {
@@ -441,6 +594,10 @@ function switchView(viewId) {
     // On-demand initialization for Audience Explorer
     if (viewId === 'audience-explorer' && !audienceExplorer_state.isInitialized) {
         initAudienceExplorer();
+    }
+
+    if (viewId === 'ajo-campaign-viewer' && !ajoState.isInitialized) {
+        initAjoCampaignViewer();
     }
 }
 
@@ -945,6 +1102,7 @@ function init() {
     ui.jornadasReportButton.addEventListener('click', handleGenerateAudienceReport);
     ui.jornadasFilterInput.addEventListener('input', applyJourneyFilters);
     ui.jornadasStatusFilter.addEventListener('change', applyJourneyFilters);
+
 
     ui.debugToggle.addEventListener('change', (e) => {
         audienceExplorer_state.debug = e.target.checked;

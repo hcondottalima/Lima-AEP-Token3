@@ -367,6 +367,7 @@
                     <a href="#" class="nav-link" data-view="batch-download">Download de Batches com Falha</a>
                     <a href="#" class="nav-link" data-view="jornadas">Jornadas Adobe</a>
                     <a href="#" class="nav-link" data-view="audience-explorer">Audience Explorer</a>
+                    <a href="#" class="nav-link" data-view="ajo-campaign-viewer">AJO Campaign Viewer</a>
                 </div>
                 <div class="nav-bottom">
                     <h4>TOOLS</h4>
@@ -621,6 +622,50 @@
                                 <h3 class="text-lg font-bold text-[#231F20] mb-2">AI Summary</h3>
                                 <div id="audience-summary-content" class="bg-[#f7f8fa] rounded-lg p-4 text-[#231F20] max-h-48 overflow-auto border border-[#e2e8f0]"></div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="view" data-view-id="ajo-campaign-viewer">
+                    <div style="background-color: var(--color-primary); color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <h1 class="text-3xl font-bold">AJO Campaign Viewer</h1>
+                        <p class="mt-2">Browse, filter, and visualize your Adobe Journey Optimizer campaigns.</p>
+                    </div>
+
+                    <main class="p-4">
+                        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+                            <h2 class="text-xl mb-2">Filters</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" id="ajo-filter-name" placeholder="Campaign Name" class="p-2 border rounded">
+                                <select id="ajo-filter-status" class="p-2 border rounded">
+                                    <option value="">All Statuses</option>
+                                    <option value="live">Live</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="finished">Finished</option>
+                                    <option value="archived">Archived</option>
+                                </select>
+                                <input type="text" id="ajo-filter-channel" placeholder="Channel" class="p-2 border rounded">
+                                <input type="text" id="ajo-filter-audienceId" placeholder="Audience ID" class="p-2 border rounded">
+                                <input type="text" id="ajo-filter-category" placeholder="Category" class="p-2 border rounded">
+                                <input type="text" id="ajo-filter-namespace" placeholder="Identity Namespace" class="p-2 border rounded">
+                            </div>
+                            <div id="ajo-active-filters" class="mt-4"></div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg shadow-md">
+                            <h2 class="text-xl mb-2">Campaigns</h2>
+                            <div id="ajo-campaign-list" class="space-y-4"></div>
+                            <div id="ajo-pagination" class="mt-4 flex justify-between items-center"></div>
+                        </div>
+                    </main>
+
+                    <div id="ajo-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center hidden">
+                        <div class="bg-white p-4 rounded-lg shadow-lg w-3/4 h-3/4 overflow-auto">
+                            <div class="flex justify-between items-center mb-2">
+                                <h2 class="text-xl">Campaign Details</h2>
+                                <button id="ajo-modal-close" class="btn btn-tertiary">Close</button>
+                            </div>
+                            <pre id="ajo-modal-content" class="bg-gray-200 p-2 rounded"></pre>
                         </div>
                     </div>
                 </div>
