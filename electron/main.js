@@ -36,7 +36,7 @@ function createAuthWindow(interactive = false) {
   authWindow = new BrowserWindow(options);
   authWindow.isInteractiveInitialLoad = interactive;
 
-      const platform = process.platform;
+  const platform = process.platform;
   let userAgent;
 
   if (platform === 'win32') {
@@ -50,7 +50,7 @@ function createAuthWindow(interactive = false) {
 
   authWindow.loadURL(ADOBE_LOGIN_URL, { userAgent: userAgent });
 
-  
+
 
   loginTimeout = setTimeout(() => {
     if (authWindow && !authWindow.isDestroyed()) {
@@ -60,16 +60,16 @@ function createAuthWindow(interactive = false) {
   }, 30000);
 
   authWindow.webContents.on('dom-ready', async () => {
-      try {
-          const currentURL = await authWindow.webContents.executeJavaScript('window.location.href');
-          if (currentURL.startsWith('https://experience.adobe.com/')) {
-              const injectorCode = require('fs').readFileSync(path.join(__dirname, 'injector.js'), 'utf8');
-              await authWindow.webContents.executeJavaScript(injectorCode);
+    try {
+      const currentURL = await authWindow.webContents.executeJavaScript('window.location.href');
+      if (currentURL.startsWith('https://experience.adobe.com/')) {
+        const injectorCode = require('fs').readFileSync(path.join(__dirname, 'injector.js'), 'utf8');
+        await authWindow.webContents.executeJavaScript(injectorCode);
 
-              const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
-              await authWindow.webContents.executeJavaScript(extractorCode);
-          }
-      } catch (e) { /* Ignore errors */ }
+        const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
+        await authWindow.webContents.executeJavaScript(extractorCode);
+      }
+    } catch (e) { /* Ignore errors */ }
   });
 
   authWindow.on('closed', () => { authWindow = null; });
@@ -86,7 +86,7 @@ function createWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../ui/window.html'));
-  
+
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -101,7 +101,7 @@ ipcMain.on('data-extracted', (event, payload) => {
   if (payload && !payload.error && payload.tokenInfo) {
     console.log('Data received from extractor script.');
     storedPayload = payload;
-    
+
     storedAuthContext = {
       token: payload.tokenInfo.token,
       orgId: payload.imsOrg
@@ -110,7 +110,7 @@ ipcMain.on('data-extracted', (event, payload) => {
     if (!mainWindow) {
       createWindow();
     }
-    
+
     mainWindow.show();
     mainWindow.webContents.send('context-updated', storedPayload);
 
@@ -123,11 +123,11 @@ ipcMain.on('data-extracted', (event, payload) => {
 });
 
 ipcMain.on('user-triggered-extraction', async () => {
-    if (authWindow) {
-        console.log('User triggered extraction. Running script...');
-        const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
-        await authWindow.webContents.executeJavaScript(extractorCode);
-    }
+  if (authWindow) {
+    console.log('User triggered extraction. Running script...');
+    const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
+    await authWindow.webContents.executeJavaScript(extractorCode);
+  }
 });
 
 ipcMain.on('re-authenticate', () => {
@@ -218,7 +218,7 @@ ipcMain.on('save-csv', (event, content) => {
 });
 
 ipcMain.on('open-external', (event, url) => {
-    shell.openExternal(url);
+  shell.openExternal(url);
 });
 
 
@@ -226,7 +226,7 @@ app.whenReady().then(() => {
   startAuthentication(true);
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
-      startAuthentication();
+      startAuthentication(true);
     }
   });
 });

@@ -157,7 +157,7 @@ async function audienceExplorer_loadAllData() {
             if (data.segments && Array.isArray(data.segments)) {
                 allSegments = allSegments.concat(audienceExplorer_transformAudienceData(data));
             }
-            nextUrl = data?.link?.next?.replace('@','/data/core/ups');
+            nextUrl = data?.link?.next?.replace('@', '/data/core/ups');
         } catch (error) {
             console.error(`Error loading or parsing audience data:`, error);
             ui.audience.stats.innerHTML = `<span class="text-red-400">Error loading data. Check console.</span>`;
@@ -660,7 +660,7 @@ async function initAudienceExplorer() {
         const rightPanel = resizer.parentElement;
         const totalHeight = rightPanel.offsetHeight;
         const resizerHeight = resizer.offsetHeight;
-        
+
         // Calculate the height of the top panel relative to the right panel's top
         const newTopHeight = e.clientY - rightPanel.getBoundingClientRect().top;
 
