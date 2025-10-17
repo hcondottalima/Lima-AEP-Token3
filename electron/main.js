@@ -223,7 +223,7 @@ ipcMain.on('open-external', (event, url) => {
 
 
 app.whenReady().then(() => {
-  startAuthentication();
+  startAuthentication(true);
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
       startAuthentication();

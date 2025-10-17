@@ -157,7 +157,7 @@ async function audienceExplorer_loadAllData() {
             if (data.segments && Array.isArray(data.segments)) {
                 allSegments = allSegments.concat(audienceExplorer_transformAudienceData(data));
             }
-            nextUrl = data?._links?.next?.href;
+            nextUrl = data?.link?.next?.replace('@','/data/core/ups');
         } catch (error) {
             console.error(`Error loading or parsing audience data:`, error);
             ui.audience.stats.innerHTML = `<span class="text-red-400">Error loading data. Check console.</span>`;
