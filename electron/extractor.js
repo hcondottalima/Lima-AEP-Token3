@@ -1,20 +1,36 @@
 async function extractData() {
     try {
-        console.log('[Extractor] Bootstrap instance found. Executing data extraction...');
+        console.log('[Extractor] Starting data extraction...');
 
-        const bootstrapInstance = window.parcelRequire49a6('eiR7j').getBootstrap();
+        if (!window.parcelRequire49a6) {
+            throw new Error('window.parcelRequire49a6 is not available.');
+        }
+
+        const bootstrapModule = window.parcelRequire49a6('eiR7j');
+        if (!bootstrapModule) {
+            throw new Error('parcelRequire49a6("eiR7j") returned null.');
+        }
+
+        const bootstrapInstance = bootstrapModule.getBootstrap();
+        console.log('[Extractor] Bootstrap instance:', bootstrapInstance);
+        if (!bootstrapInstance) {
+            throw new Error('getBootstrap() returned null.');
+        }
+
         const sessionDataString = window.localStorage.getItem('unifiedShellSession');
-
-        if (!bootstrapInstance || !sessionDataString) {
-            throw new Error('Could not find bootstrap instance or session data after polling.');
+        console.log('[Extractor] unifiedShellSession:', sessionDataString);
+        if (!sessionDataString) {
+            throw new Error('Could not find unifiedShellSession in localStorage.');
         }
 
         const authInfo = await bootstrapInstance._authInfoPromise;
+        console.log('[Extractor] Auth info:', authInfo);
         if (!authInfo || !authInfo.adobeIMS) {
             throw new Error('Could not resolve auth promise or find adobeIMS object.');
         }
 
         const accessTokenInfo = authInfo.adobeIMS.getAccessToken();
+        console.log('[Extractor] Access token info:', accessTokenInfo);
         if (!accessTokenInfo || !accessTokenInfo.token) {
              throw new Error('Could not retrieve access token from authInfo.adobeIMS.getAccessToken()');
         }

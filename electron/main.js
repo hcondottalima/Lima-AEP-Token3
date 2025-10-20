@@ -14,6 +14,7 @@ function startAuthentication(interactive = false) {
     authWindow.close();
   }
   createAuthWindow(interactive);
+  authWindow.webContents.openDevTools();
 }
 
 function createAuthWindow(interactive = false) {
@@ -126,7 +127,9 @@ ipcMain.on('user-triggered-extraction', async () => {
   if (authWindow) {
     console.log('User triggered extraction. Running script...');
     const extractorCode = require('fs').readFileSync(path.join(__dirname, 'extractor.js'), 'utf8');
-    await authWindow.webContents.executeJavaScript(extractorCode);
+    authWindow.webContents.executeJavaScript(extractorCode).catch(err => {
+      console.error('Error executing extractor script:', err);
+    });
   }
 });
 
